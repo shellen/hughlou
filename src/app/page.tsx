@@ -191,7 +191,7 @@ export default function Home() {
           <div className="flex items-end">
             <div className="bg-[#111113] px-6 sm:px-10 pb-8 pt-1">
               <p
-                className="text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
+                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
                 aria-hidden="true"
               >
@@ -200,7 +200,7 @@ export default function Home() {
             </div>
             <div className="bg-[#2563eb] px-6 sm:px-8 py-3 sm:py-4 flex-1 rounded-br-2xl">
               <p
-                className="text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
+                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
                 VANCOUVER &middot; 2026
