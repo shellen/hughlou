@@ -209,19 +209,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* HughLou branding + subtitle */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-10 h-10 bg-[#2563eb] rounded-xl flex items-center justify-center" aria-hidden="true">
-            <span className="text-white font-black text-sm leading-none tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>HL</span>
-          </div>
-          <h1
-            className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wide leading-none"
-            style={{ fontFamily: "'Outfit', sans-serif" }}
-          >
-            HUGH<span className="text-[#2563eb]">LOU</span>
-          </h1>
-          <div className="h-px flex-1 bg-[#1c1c1f]" />
-        </div>
+        <h1 className="sr-only">HUGHLOU — ATmosphereConf 2026 Replay</h1>
         <p className="text-base text-[#8b8b96] leading-relaxed max-w-2xl mb-1">
           Every talk from ATmosphereConf 2026, on demand.
         </p>
