@@ -175,22 +175,57 @@ export default function Home() {
     <div className="max-w-[1400px] mx-auto px-6 py-10">
       <HeaderSearch search={search} setSearch={setSearch} />
 
-      {/* Hero intro */}
+      {/* Hero — ATmosphere Conf style */}
       <div className="mb-14">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-[#2563eb] rounded-xl flex items-center justify-center">
-            <span className="text-white font-black text-sm leading-none tracking-tight">HL</span>
+        <div className="rounded-2xl overflow-hidden mb-8">
+          {/* Conference banner */}
+          <div className="bg-[#111113] px-6 sm:px-10 pt-8 pb-2">
+            <p
+              className="text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+              aria-hidden="true"
+            >
+              ATMOSPHERE
+            </p>
           </div>
+          <div className="flex items-end">
+            <div className="bg-[#111113] px-6 sm:px-10 pb-8 pt-1">
+              <p
+                className="text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+                aria-hidden="true"
+              >
+                CONF
+              </p>
+            </div>
+            <div className="bg-[#2563eb] px-6 sm:px-8 py-3 sm:py-4 flex-1 rounded-br-2xl">
+              <p
+                className="text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+              >
+                VANCOUVER &middot; 2026
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* HughLou branding + subtitle */}
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-10 h-10 bg-[#2563eb] rounded-xl flex items-center justify-center" aria-hidden="true">
+            <span className="text-white font-black text-sm leading-none tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>HL</span>
+          </div>
+          <h1
+            className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wide leading-none"
+            style={{ fontFamily: "'Outfit', sans-serif" }}
+          >
+            HUGH<span className="text-[#2563eb]">LOU</span>
+          </h1>
           <div className="h-px flex-1 bg-[#1c1c1f]" />
         </div>
-        <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none mb-4">
-          Hugh<span className="text-[#2563eb]">Lou</span>
-        </h1>
-        <p className="text-lg text-[#8b8b96] leading-relaxed max-w-2xl mb-1">
-          ATmosphereConf 2026 &middot; On Demand
+        <p className="text-base text-[#8b8b96] leading-relaxed max-w-2xl mb-1">
+          Every talk from ATmosphereConf 2026, on demand.
         </p>
         <p className="text-sm text-[#71717a] leading-relaxed max-w-2xl">
-          Every talk from the global AT Protocol community conference.
           Three days of workshops, demos, and deep dives — from Vancouver, BC.
         </p>
         {videos.length > 0 && (

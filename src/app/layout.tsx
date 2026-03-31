@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "HughLou — ATmosphereConf 2026 Replay",
+  title: "HUGHLOU — ATmosphereConf 2026 Replay",
   description:
     "Every talk from ATmosphereConf 2026, on demand. Open-source conference replay powered by AT Protocol and Streamplace.",
   icons: {
@@ -30,7 +30,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
       </head>
@@ -45,19 +45,19 @@ export default function RootLayout({
           >
             <a
               href="/"
-              className="flex items-center gap-3 shrink-0 group"
-              aria-label="HughLou — Home"
+              className="flex items-center gap-2.5 shrink-0 group"
+              aria-label="HUGHLOU — Home"
             >
               <div
                 className="w-8 h-8 bg-[#2563eb] rounded-lg flex items-center justify-center"
                 aria-hidden="true"
               >
-                <span className="text-white font-black text-[11px] leading-none tracking-tight">
+                <span className="text-white font-black text-[11px] leading-none tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
                   HL
                 </span>
               </div>
-              <span className="text-sm font-bold text-white tracking-tight hidden sm:block">
-                Hugh<span className="text-[#2563eb]">Lou</span>
+              <span className="text-[15px] font-black text-white tracking-wide uppercase hidden sm:block" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                HUGH<span className="text-[#2563eb]">LOU</span>
               </span>
             </a>
             <div id="header-search" className="flex-1 max-w-md" role="search" />
@@ -67,42 +67,49 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="border-t border-[#1c1c1f] py-8 mt-16">
-          <div className="max-w-[1400px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-[#8b8b96] tracking-wide">
-              ATmosphereConf 2026 &middot; Vancouver, BC &middot; March 28–30
-            </p>
-            <div className="flex items-center gap-4 text-xs text-[#8b8b96]">
-              <span>
-                A{" "}
+          <div className="max-w-[1400px] mx-auto px-6 flex flex-col items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+              <p className="text-xs text-[#8b8b96] tracking-wide">
+                ATmosphereConf 2026 &middot; Vancouver, BC &middot; March 28–30
+              </p>
+              <div className="flex items-center gap-4 text-xs text-[#8b8b96]">
+                <span>
+                  A{" "}
+                  <a
+                    href="https://bsky.app/profile/shellen.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#a0a0ff] hover:text-white transition-colors"
+                  >
+                    @shellen.com
+                  </a>{" "}
+                  project
+                </span>
+                <span className="text-[#1c1c1f]">|</span>
                 <a
-                  href="https://bsky.app/profile/shellen.com"
+                  href="https://stream.place"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#a0a0ff] hover:text-white transition-colors"
+                  className="hover:text-white transition-colors"
                 >
-                  @shellen.com
-                </a>{" "}
-                project
-              </span>
-              <span className="text-[#1c1c1f]">|</span>
-              <a
-                href="https://stream.place"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-              >
-                Powered by Streamplace
-              </a>
-              <span className="text-[#1c1c1f]">|</span>
-              <a
-                href="https://github.com/shellen/hughlou"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-              >
-                Open Source
-              </a>
+                  Powered by Streamplace
+                </a>
+                <span className="text-[#1c1c1f]">|</span>
+                <a
+                  href="https://github.com/shellen/hughlou"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Open Source
+                </a>
+              </div>
             </div>
+            <p className="text-[10px] text-[#52525b] text-center max-w-lg">
+              HughLou is an independent, open-source project and is in no way affiliated with, endorsed by, or associated with{" "}
+              <a href="https://stream.place" target="_blank" rel="noopener noreferrer" className="hover:text-[#8b8b96] transition-colors">Stream.place</a> or{" "}
+              <a href="https://atmosphere.wtf" target="_blank" rel="noopener noreferrer" className="hover:text-[#8b8b96] transition-colors">ATmosphere Conf</a>.
+            </p>
           </div>
         </footer>
       </body>
