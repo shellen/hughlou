@@ -198,7 +198,7 @@ export default function Home() {
                 CONF
               </p>
             </div>
-            <div className="bg-[#2563eb] px-4 sm:px-6 flex items-center flex-1 rounded-br-2xl pb-6 pt-0">
+            <div className="bg-[#2563eb] px-4 sm:px-6 flex items-center flex-1 rounded-tl-2xl pb-6 pt-0">
               <p
                 className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -218,7 +218,7 @@ export default function Home() {
         </p>
         {videos.length > 0 && (
           <p className="text-sm text-[#52525b] mt-3 font-mono">
-            {videos.length} talks &middot; 3 days &middot; March 28–30
+            {videos.length}&nbsp;talks &middot; 3 days &middot; March 28&ndash;30
           </p>
         )}
       </div>
