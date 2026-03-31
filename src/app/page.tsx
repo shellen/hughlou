@@ -188,19 +188,19 @@ export default function Home() {
               ATMOSPHERE
             </p>
           </div>
-          <div className="flex items-end">
-            <div className="bg-[#111113] px-6 sm:px-10 pb-8 pt-1">
+          <div className="flex items-stretch">
+            <div className="bg-[#111113] pl-6 sm:pl-10 pr-4 sm:pr-6 flex items-center pb-6 pt-0">
               <p
-                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
+                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
                 aria-hidden="true"
               >
                 CONF
               </p>
             </div>
-            <div className="bg-[#2563eb] px-6 sm:px-8 py-3 sm:py-4 flex-1 rounded-br-2xl">
+            <div className="bg-[#2563eb] px-4 sm:px-6 flex items-center flex-1 rounded-br-2xl pb-6 pt-0">
               <p
-                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
+                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
                 VANCOUVER &middot; 2026
