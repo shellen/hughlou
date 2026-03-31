@@ -189,7 +189,7 @@ export default function Home() {
             </p>
           </div>
           <div className="flex items-stretch">
-            <div className="bg-[#111113] pl-6 sm:pl-10 pr-1 sm:pr-2 flex items-center pb-6 pt-0">
+            <div className="bg-[#111113] pl-6 sm:pl-10 pr-2 sm:pr-3 flex items-center pb-6 pt-0">
               <p
                 className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
