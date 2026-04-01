@@ -116,64 +116,21 @@ export async function fetchThreadReplies(
   }
 }
 
-// Search Bluesky for posts mentioning a URL (the video page)
-export async function searchMentions(
-  videoUrl: string
-): Promise<Comment[]> {
-  try {
-    const params = new URLSearchParams({
-      method: "app.bsky.feed.searchPosts",
-      q: videoUrl,
-      limit: "25",
-    })
-    const resp = await fetch(
-      `${BSKY_PROXY}?${params}`
-    )
-    if (!resp.ok) return []
-    const data = await resp.json()
-
-    return (data.posts || []).map((p: BskyPost) => postToComment(p, false))
-  } catch {
-    return []
-  }
-}
-
-// Combined: get all comments for a video (thread replies + URL mentions)
+// Combined: get all comments for a video (thread replies)
+// Note: searchPosts requires Bluesky auth, so URL-mention search is not
+// available. Comments come from direct thread replies to the stream post.
 export async function fetchAllComments(
   postUri: string | null,
-  videoPageUrl: string,
-  streamplaceUrl?: string | null
 ): Promise<Comment[]> {
-  const searches = [searchMentions(videoPageUrl)]
-  if (streamplaceUrl) searches.push(searchMentions(streamplaceUrl))
+  const threadReplies = postUri
+    ? await fetchThreadReplies(postUri)
+    : []
 
-  const [threadReplies, ...mentionResults] = await Promise.all([
-    postUri ? fetchThreadReplies(postUri) : Promise.resolve([]),
-    ...searches,
-  ])
-  const mentions = mentionResults.flat()
-
-  // Deduplicate by post URI and filter out known spam
-  const seen = new Set<string>()
-  const all: Comment[] = []
-
-  function addIfNew(c: Comment) {
-    if (!seen.has(c.id) && !FILTERED_POST_URIS.has(c.id)) {
-      seen.add(c.id)
-      all.push(c)
-    }
-  }
-
-  // Thread replies first (they're direct conversation)
-  for (const c of threadReplies) addIfNew(c)
-  // Then mentions
-  for (const c of mentions) addIfNew(c)
-
-  // Sort by date, newest first
-  all.sort(
-    (a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
-
-  return all
+  // Filter out known spam
+  return threadReplies
+    .filter((c) => !FILTERED_POST_URIS.has(c.id))
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
 }

@@ -14,7 +14,7 @@ Built for the [Streamplace VOD JAM](https://blog.stream.place/3micfu6ifyk2a).
 - Browse and search all conference talks by title, speaker, or Bluesky handle
 - HLS video playback via [hls.js](https://github.com/video-dev/hls.js) with native Safari fallback
 - Memory-optimized video: capped HLS buffers (30 MB), back-buffer eviction, lazy-loaded thumbnails
-- Async thumbnail generation (captured from video frames, cached in localStorage)
+- Thumbnails from livestream records with async canvas-capture fallback, cached in localStorage
 - Bluesky comment threads — replies to the stream post and mentions of the talk URL appear as comments
 - Speaker handles auto-linked to Bluesky profiles
 - Share to Bluesky, copy link, or send via Messages
@@ -51,8 +51,10 @@ The transcript feature uses the [Web Speech API](https://developer.mozilla.org/e
 
 1. Fetches `place.stream.video` records from the AT Protocol PDS via `com.atproto.repo.listRecords`
 2. Resolves livestream metadata (speaker names, handles, thumbnails) from linked `place.stream.livestream` records
-3. Plays HLS video streams using the Streamplace VOD beta endpoint (`vod-beta.stream.place`)
-4. Pulls Bluesky post threads via `app.bsky.feed.getPostThread` and search via `app.bsky.feed.searchPosts` to populate discussion
+3. Plays HLS video streams directly from the Streamplace VOD server (`vod-beta.stream.place`) — no video bytes are proxied through the app
+4. Pulls Bluesky post threads via `app.bsky.feed.getPostThread` to populate discussion
+
+**Note:** Streamplace VOD is in beta. The VOD endpoint URL, XRPC method names, and response formats may change as encoding and infrastructure evolve on the stream.place side. If video playback breaks after an upstream change, check `VOD_PLAYBACK_URL` in `src/lib/api.ts`. Video AT URIs (`at://` identifiers) are stable — only the playback delivery layer is subject to change.
 
 ## Getting Started
 
@@ -133,6 +135,8 @@ src/
     events/atmosphereconf2026/
       layout.tsx                            # Event SEO metadata
       page.tsx                              # Event listing: talk grid, search, day grouping
+    api/
+      bsky/route.ts                         # Proxy for Bluesky public API (getPostThread)
     watch/[rkey]/
       page.tsx                              # Server wrapper with generateMetadata
       WatchClient.tsx                       # Watch: player, breadcrumb, actions, comments

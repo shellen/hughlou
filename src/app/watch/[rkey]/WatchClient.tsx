@@ -247,7 +247,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
   const [speakerHandles, setSpeakerHandles] = useState<string[]>([])
   const [creatorHandle, setCreatorHandle] = useState("")
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
-  const [sidebarSpeakers, setSidebarSpeakers] = useState<Record<string, { speaker: string; handles: string[] }>>({})
+  const [sidebarSpeakers, setSidebarSpeakers] = useState<Record<string, { speaker: string; handles: string[]; thumbUrl?: string }>>({})
 
   const onThumbCapture = useCallback((rk: string, dataUrl: string) => {
     setThumbs((prev) => ({ ...prev, [rk]: dataUrl }))
@@ -323,7 +323,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     let cancelled = false
     const others = allVideos.filter((v) => v.uri !== video?.uri).slice(0, 12)
     async function enrichSidebar() {
-      const infos: Record<string, { speaker: string; handles: string[] }> = {}
+      const infos: Record<string, { speaker: string; handles: string[]; thumbUrl?: string }> = {}
       await Promise.allSettled(
         others.map(async (v) => {
           const rk = extractRkey(v.uri)
@@ -332,7 +332,13 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
               const ls = await fetchLivestreamRecord(v.livestream.uri)
               if (ls) {
                 const parsed = parseSpeaker(ls.title)
-                infos[rk] = { speaker: parsed.speaker, handles: parsed.handles }
+                let thumbUrl: string | undefined
+                if (ls.thumb?.ref?.$link) {
+                  const creatorDid = extractDid(v.livestream.uri)
+                  const pds = await resolvePds(creatorDid)
+                  if (pds) thumbUrl = getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds)
+                }
+                infos[rk] = { speaker: parsed.speaker, handles: parsed.handles, thumbUrl }
               }
             } catch { /* skip */ }
           }
@@ -508,9 +514,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
           {/* Bluesky Comments */}
           <BlueskyComments
             postUri={livestream?.post?.uri || null}
-            videoPageUrl={`https://hughlou.com/watch/${rkey}`}
             shareUrl={shareUrl}
-            streamplaceUrl={streamplaceUrl}
           />
         </div>
 
@@ -540,7 +544,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
                     createdAt={v.createdAt}
                     uri={v.uri}
                     compact
-                    thumbDataUrl={thumbs[rk]}
+                    thumbDataUrl={thumbs[rk] || sidebarSpeakers[rk]?.thumbUrl}
                     speaker={sidebarSpeakers[rk]?.speaker}
                     speakerHandles={sidebarSpeakers[rk]?.handles}
                   />

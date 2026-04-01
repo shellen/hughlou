@@ -59,7 +59,6 @@ export async function captureThumb(
 
   return new Promise((resolve) => {
     const video = document.createElement("video")
-    video.crossOrigin = "anonymous"
     video.muted = true
     video.playsInline = true
     video.preload = "auto"
@@ -85,7 +84,7 @@ export async function captureThumb(
       resolve(result)
     }
 
-    function onSeeked() {
+    function captureFrame() {
       try {
         const canvas = document.createElement("canvas")
         canvas.width = THUMB_WIDTH
@@ -106,12 +105,15 @@ export async function captureThumb(
         saveThumb(rkey, dataUrl)
         cleanup(dataUrl)
       } catch {
-        // Canvas taint / security error — fall back to gradient
+        // Canvas taint / security error — fall back
         cleanup(null)
       }
     }
 
-    video.addEventListener("seeked", onSeeked, { once: true })
+    // After seeked, wait one frame for the decoder to present the new frame
+    function onSeeked() {
+      requestAnimationFrame(() => requestAnimationFrame(() => captureFrame()))
+    }
 
     // Try loading
     import("hls.js").then((HlsModule) => {
@@ -120,16 +122,24 @@ export async function captureThumb(
         const hls = new Hls({
           debug: false,
           enableWorker: false,
-          // Only load enough to capture a frame
           maxBufferLength: 5,
           maxMaxBufferLength: 10,
+          autoStartLoad: false, // don't start from 0 — we'll start from SEEK_TIME
         })
         hlsInstance = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.currentTime = Math.min(SEEK_TIME, video.duration > 0 ? video.duration * 0.1 : SEEK_TIME)
+          // Start loading directly from the target position — no seeking needed
+          hls.startLoad(SEEK_TIME)
         })
+        // Once data at SEEK_TIME is buffered and a frame is decoded, capture it
+        video.addEventListener("canplay", () => {
+          video.addEventListener("seeked", onSeeked, { once: true })
+          // Seek to exact target (startLoad gets us close, this gets us precise)
+          const target = Math.min(SEEK_TIME, video.duration > 0 ? video.duration * 0.1 : SEEK_TIME)
+          video.currentTime = target
+        }, { once: true })
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) cleanup(null)
         })
@@ -137,7 +147,9 @@ export async function captureThumb(
         // Safari native HLS
         video.src = hlsUrl
         video.addEventListener("loadedmetadata", () => {
-          video.currentTime = Math.min(SEEK_TIME, video.duration > 0 ? video.duration * 0.1 : SEEK_TIME)
+          const target = Math.min(SEEK_TIME, video.duration > 0 ? video.duration * 0.1 : SEEK_TIME)
+          video.currentTime = target
+          video.addEventListener("seeked", onSeeked, { once: true })
         }, { once: true })
         video.addEventListener("error", () => cleanup(null), { once: true })
       } else {

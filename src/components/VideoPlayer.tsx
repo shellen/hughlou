@@ -10,7 +10,7 @@ interface VideoPlayerProps {
   thumbDataUrl?: string | null
 }
 
-type PlayerState = "idle" | "loading" | "playing" | "error"
+type PlayerState = "idle" | "loading" | "ready" | "playing" | "error"
 
 function titleToGradient(title: string) {
   let hash = 0
@@ -40,7 +40,7 @@ function titleToGradient(title: string) {
 }
 
 const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
-  function VideoPlayer({ hlsUrl, title, poster: _poster, thumbDataUrl }, ref) {
+  function VideoPlayer({ hlsUrl, title, poster, thumbDataUrl }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const hlsRef = useRef<Hls | null>(null)
     const [state, setState] = useState<PlayerState>("idle")
@@ -49,43 +49,27 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
     const gradientStyle = titleToGradient(title)
 
+    // Load HLS eagerly on mount so manifest is parsed before user clicks play.
+    // This matches how istream (working VOD JAM app) and stream.place do it —
+    // HLS loads in useEffect, not in a click handler.
     useEffect(() => {
-      return () => {
-        if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
-        const video = videoRef.current
-        if (video) {
-          const cleanup = (video as unknown as Record<string, unknown>).__safariCleanup as (() => void) | undefined
-          if (cleanup) { cleanup(); delete (video as unknown as Record<string, unknown>).__safariCleanup }
-          video.pause()
-          video.removeAttribute("src")
-          video.load()
-        }
-      }
-    }, [hlsUrl])
-
-    const handlePlay = () => {
       const video = videoRef.current
       if (!video || !hlsUrl) return
-
-      // Destroy any existing HLS instance before creating a new one
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
-
-      setState("loading")
 
       if (Hls.isSupported()) {
         const hls = new Hls({
           debug: false,
           enableWorker: true,
-          maxBufferLength: 30,        // only buffer 30s ahead
-          maxMaxBufferLength: 60,     // hard cap at 60s
-          maxBufferSize: 30 * 1000 * 1000, // 30 MB max buffer
-          backBufferLength: 15,       // evict played segments after 15s
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          maxBufferSize: 30 * 1000 * 1000,
+          backBufferLength: 15,
         })
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().then(() => setState("playing")).catch(() => setState("playing"))
+          setState("ready")
         })
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
@@ -94,23 +78,45 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
             else setState("error")
           }
         })
-        let hasSegments = false
-        hls.on(Hls.Events.FRAG_LOADED, () => { hasSegments = true })
-        setTimeout(() => { if (!hasSegments) setState((cur) => cur === "loading" ? "error" : cur) }, 12000)
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = hlsUrl
-        const onMeta = () => {
-          video.play().then(() => setState("playing")).catch(() => setState("playing"))
+        return () => {
+          hls.destroy()
+          hlsRef.current = null
         }
-        const onErr = () => setState("error")
-        video.addEventListener("loadedmetadata", onMeta, { once: true })
-        video.addEventListener("error", onErr, { once: true })
-        // Store refs for cleanup
-        ;(video as unknown as Record<string, unknown>).__safariCleanup = () => {
-          video.removeEventListener("loadedmetadata", onMeta)
-          video.removeEventListener("error", onErr)
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        // Safari native HLS
+        video.src = hlsUrl
+        video.addEventListener("loadedmetadata", () => setState("ready"), { once: true })
+        video.addEventListener("error", () => setState("error"), { once: true })
+        return () => {
+          video.pause()
+          video.removeAttribute("src")
+          video.load()
         }
       }
+    }, [hlsUrl])
+
+    // User clicks play — video.play() fires synchronously in the click gesture
+    const handlePlay = () => {
+      const video = videoRef.current
+      if (!video) return
+
+      setState("loading")
+
+      video.play().then(() => {
+        setState("playing")
+      }).catch((err) => {
+        if (err.name === "NotAllowedError") {
+          // Browser blocked unmuted autoplay — mute and retry
+          video.muted = true
+          video.play().then(() => {
+            setState("playing")
+          }).catch(() => {
+            setState("playing")
+          })
+        } else {
+          setState("playing")
+        }
+      })
     }
 
     const showOverlay = state !== "playing"
@@ -120,16 +126,16 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         <video
           ref={videoRef}
           controls={state === "playing"}
+          playsInline
           className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}
           aria-label={title}
-          playsInline
         />
 
         {showOverlay && (
           <div className="absolute inset-0">
             {/* Background */}
-            {thumbDataUrl ? (
-              <img src={thumbDataUrl} alt={`Thumbnail for ${title}`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+            {(thumbDataUrl || poster) ? (
+              <img src={(thumbDataUrl || poster)!} alt={`Thumbnail for ${title}`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
             ) : (
               <div className="absolute inset-0 flex items-end p-8" style={{ backgroundColor: gradientStyle.bg }}>
                 <p className="text-base font-medium leading-snug line-clamp-3 opacity-40" aria-hidden="true" style={{ color: gradientStyle.accent }}>
@@ -138,8 +144,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Idle: play button */}
-            {state === "idle" && (
+            {/* Idle / Ready: play button */}
+            {(state === "idle" || state === "ready") && (
               <button
                 onClick={handlePlay}
                 aria-label={`Play ${title}`}

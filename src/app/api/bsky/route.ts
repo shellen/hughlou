@@ -4,7 +4,6 @@ const BSKY_PUBLIC_API = "https://public.api.bsky.app/xrpc"
 
 const ALLOWED_METHODS = new Set([
   "app.bsky.feed.getPostThread",
-  "app.bsky.feed.searchPosts",
 ])
 
 export async function GET(request: NextRequest) {
