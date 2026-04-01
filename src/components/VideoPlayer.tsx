@@ -10,85 +10,37 @@ interface VideoPlayerProps {
   thumbDataUrl?: string | null
 }
 
-type PlayerState = "idle" | "loading" | "ready" | "playing" | "error"
-
-function titleToGradient(title: string) {
-  let hash = 0
-  for (let i = 0; i < title.length; i++) {
-    hash = title.charCodeAt(i) + ((hash << 5) - hash)
-    hash = hash & hash
-  }
-  const palettes = [
-    { bg: "#14141f", accent: "#3b5998" },
-    { bg: "#141420", accent: "#4a6fa5" },
-    { bg: "#0f1117", accent: "#6b7280" },
-    { bg: "#170d26", accent: "#7c5cbf" },
-    { bg: "#0d1520", accent: "#4a80b5" },
-    { bg: "#111927", accent: "#5a8ec0" },
-    { bg: "#1a1425", accent: "#8b6aad" },
-    { bg: "#0e1a1f", accent: "#4a9aa8" },
-    { bg: "#131320", accent: "#7068a8" },
-    { bg: "#101825", accent: "#5580ad" },
-    { bg: "#1a150d", accent: "#a88b4a" },
-    { bg: "#0c1315", accent: "#4a9aa0" },
-    { bg: "#1a0d0d", accent: "#a06060" },
-    { bg: "#0d1a0d", accent: "#60a060" },
-    { bg: "#1a1a0d", accent: "#a0a060" },
-    { bg: "#1a0d1a", accent: "#a060a0" },
-  ]
-  return palettes[Math.abs(hash) % palettes.length]
-}
-
 const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
   function VideoPlayer({ hlsUrl, title, poster, thumbDataUrl }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null)
-    const hlsRef = useRef<Hls | null>(null)
-    const [state, setState] = useState<PlayerState>("idle")
+    const [error, setError] = useState(false)
 
     useImperativeHandle(ref, () => videoRef.current!, [])
 
-    const gradientStyle = titleToGradient(title)
-
-    // Load HLS eagerly on mount so manifest is parsed before user clicks play.
-    // This matches how istream (working VOD JAM app) and stream.place do it —
-    // HLS loads in useEffect, not in a click handler.
+    // Load HLS eagerly on mount — matches istream (confirmed working VOD JAM app).
+    // No custom play button, no programmatic play(). Native <video controls> handles everything.
     useEffect(() => {
       const video = videoRef.current
       if (!video || !hlsUrl) return
 
-      setState("idle")
+      setError(false)
 
       if (Hls.isSupported()) {
-        const hls = new Hls({
-          debug: false,
-          enableWorker: true,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          maxBufferSize: 30 * 1000 * 1000,
-          backBufferLength: 15,
-        })
-        hlsRef.current = hls
+        const hls = new Hls()
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          setState("ready")
-        })
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad()
             else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError()
-            else setState("error")
+            else setError(true)
           }
         })
-        return () => {
-          hls.destroy()
-          hlsRef.current = null
-        }
+        return () => hls.destroy()
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Safari native HLS
         video.src = hlsUrl
-        video.addEventListener("loadedmetadata", () => setState("ready"), { once: true })
-        video.addEventListener("error", () => setState("error"), { once: true })
+        video.addEventListener("error", () => setError(true), { once: true })
         return () => {
           video.pause()
           video.removeAttribute("src")
@@ -97,102 +49,35 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
       }
     }, [hlsUrl])
 
-    // User clicks play — video.play() fires synchronously in the click gesture.
-    // Only callable when state === "ready" (manifest parsed, media attached).
-    const handlePlay = () => {
-      const video = videoRef.current
-      if (!video) return
+    // Use captured thumbnail, then server thumbnail, as poster
+    const posterSrc = thumbDataUrl || poster || undefined
 
-      setState("loading")
-
-      video.play().then(() => {
-        setState("playing")
-      }).catch((err) => {
-        if (err.name === "NotAllowedError") {
-          // Browser blocked unmuted autoplay — mute and retry (stream.place pattern)
-          video.muted = true
-          video.play().then(() => {
-            setState("playing")
-          }).catch(() => {
-            // Even muted play failed — show native controls as last resort
-            setState("playing")
-          })
-        } else if (err.name === "AbortError") {
-          // play() interrupted (e.g. by a new load) — not a real error, let user retry
-          setState("ready")
-        } else {
-          // Genuine playback failure
-          setState("error")
-        }
-      })
+    if (error) {
+      return (
+        <div className="w-full aspect-video rounded-lg overflow-hidden bg-slate-900 flex flex-col items-center justify-center gap-4" role="alert">
+          <p className="text-slate-400 text-sm font-medium">This VOD isn&apos;t available yet</p>
+          <p className="text-slate-500 text-xs">Still processing — check back soon</p>
+          <button
+            onClick={() => setError(false)}
+            className="mt-1 px-5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )
     }
 
-    const showOverlay = state !== "playing"
-
     return (
-      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-slate-900" role="region" aria-label={`Video player: ${title}`}>
+      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-black" role="region" aria-label={`Video player: ${title}`}>
         <video
           ref={videoRef}
-          controls={state === "playing"}
+          controls
           playsInline
-          className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}
+          poster={posterSrc}
+          className="w-full h-full"
+          style={{ backgroundColor: "#000" }}
           aria-label={title}
         />
-
-        {showOverlay && (
-          <div className="absolute inset-0">
-            {/* Background */}
-            {(thumbDataUrl || poster) ? (
-              <img src={(thumbDataUrl || poster)!} alt={`Thumbnail for ${title}`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
-            ) : (
-              <div className="absolute inset-0 flex items-end p-8" style={{ backgroundColor: gradientStyle.bg }}>
-                <p className="text-base font-medium leading-snug line-clamp-3 opacity-40" aria-hidden="true" style={{ color: gradientStyle.accent }}>
-                  {title}
-                </p>
-              </div>
-            )}
-
-            {/* Ready: play button (manifest parsed, safe to call play()) */}
-            {state === "ready" && (
-              <button
-                onClick={handlePlay}
-                aria-label={`Play ${title}`}
-                className="absolute inset-0 w-full h-full cursor-pointer group bg-transparent border-0"
-              >
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-all duration-200" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-focus-visible:scale-105 shadow-2xl">
-                    <svg className="w-7 h-7 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </div>
-                </div>
-              </button>
-            )}
-
-            {/* Idle (manifest loading) or Loading (play() in progress): spinner */}
-            {(state === "idle" || state === "loading") && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40" role="status" aria-label="Loading video">
-                <div className="w-10 h-10 border-2 border-white/20 border-t-blue-600 rounded-full animate-spin" />
-                <span className="sr-only">Loading video…</span>
-              </div>
-            )}
-
-            {/* Error */}
-            {state === "error" && (
-              <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center gap-4" role="alert">
-                <p className="text-slate-400 text-sm font-medium">This VOD isn&apos;t available yet</p>
-                <p className="text-slate-500 text-xs">Still processing — check back soon</p>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setState("idle") }}
-                  className="mt-1 px-5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     )
   }
