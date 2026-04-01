@@ -8,6 +8,8 @@ const ALLOWED_METHODS = new Set([
   "place.stream.playback.getVideoBlob",
 ])
 
+export const runtime = "edge"
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ method: string[] }> }
@@ -58,7 +60,8 @@ export async function GET(
       })
     }
 
-    // For binary segments, stream through with proper headers
+    // For binary segments, buffer and forward with proper headers
+    const buffer = await resp.arrayBuffer()
     const responseHeaders: Record<string, string> = {
       "Cache-Control": "public, max-age=31536000, immutable",
     }
@@ -73,7 +76,7 @@ export async function GET(
       if (val) responseHeaders[key] = val
     }
 
-    return new Response(resp.body, {
+    return new Response(buffer, {
       status: resp.status,
       headers: responseHeaders,
     })
