@@ -72,21 +72,40 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
       setState("loading")
 
+      // Autoplay recovery matching stream.place's own player pattern:
+      // try play() → if NotAllowedError, mute and retry → if still fails, show controls
+      function tryPlay() {
+        video!.play().then(() => {
+          setState("playing")
+        }).catch((err) => {
+          if (err.name === "NotAllowedError") {
+            // Browser blocked unmuted autoplay — mute and retry
+            video!.muted = true
+            video!.play().then(() => {
+              setState("playing")
+            }).catch(() => {
+              // Even muted play failed — show video with controls so user can manually play
+              setState("playing")
+            })
+          } else {
+            setState("playing")
+          }
+        })
+      }
+
       if (Hls.isSupported()) {
         const hls = new Hls({
           debug: false,
           enableWorker: true,
-          maxBufferLength: 30,        // only buffer 30s ahead
-          maxMaxBufferLength: 60,     // hard cap at 60s
-          maxBufferSize: 30 * 1000 * 1000, // 30 MB max buffer
-          backBufferLength: 15,       // evict played segments after 15s
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          maxBufferSize: 30 * 1000 * 1000,
+          backBufferLength: 15,
         })
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().then(() => setState("playing")).catch(() => setState("playing"))
-        })
+        hls.on(Hls.Events.MANIFEST_PARSED, tryPlay)
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad()
@@ -100,10 +119,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Safari native HLS
         video.src = hlsUrl
-        const onMeta = () => {
-          video.play().then(() => setState("playing")).catch(() => setState("playing"))
-        }
-        video.addEventListener("loadedmetadata", onMeta, { once: true })
+        video.addEventListener("canplaythrough", tryPlay, { once: true })
         video.addEventListener("error", () => setState("error"), { once: true })
       }
     }
@@ -115,9 +131,10 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         <video
           ref={videoRef}
           controls={state === "playing"}
+          autoPlay
+          playsInline
           className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}
           aria-label={title}
-          playsInline
         />
 
         {showOverlay && (
