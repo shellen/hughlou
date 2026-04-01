@@ -61,18 +61,10 @@ export default function RootLayout({
           >
             <a
               href="/"
-              className="flex items-center gap-2.5 shrink-0 group"
+              className="shrink-0 group"
               aria-label="HUGHLOU — Home"
             >
-              <div
-                className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"
-                aria-hidden="true"
-              >
-                <span className="font-display text-white font-black text-[11px] leading-none tracking-tight">
-                  HL
-                </span>
-              </div>
-              <span className="font-display text-[15px] font-black text-white tracking-wide uppercase hidden sm:block">
+              <span className="font-display text-[20px] font-black text-white tracking-wide uppercase">
                 HUGH<span className="text-blue-600">LOU</span>
               </span>
             </a>
