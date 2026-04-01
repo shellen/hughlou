@@ -10,6 +10,8 @@ export interface VideoCardProps {
   uri: string
   compact?: boolean
   thumbDataUrl?: string | null
+  speaker?: string | null
+  speakerHandles?: string[]
 }
 
 function titleToGradient(title: string) {
@@ -69,6 +71,8 @@ export default function VideoCard({
   uri,
   compact = false,
   thumbDataUrl,
+  speaker,
+  speakerHandles,
 }: VideoCardProps) {
   const rkey = extractRkey(uri)
 
@@ -87,7 +91,18 @@ export default function VideoCard({
             <h3 className="text-[13px] font-medium text-[#ededef] group-hover:text-white transition-colors line-clamp-2 leading-snug">
               {title}
             </h3>
-            <p className="text-[11px] text-[#8b8b96] mt-1.5 font-mono">
+            {(speaker || (speakerHandles && speakerHandles.length > 0)) && (
+              <p className="text-[11px] text-[#71717a] mt-1 truncate">
+                {speaker}
+                {speakerHandles && speakerHandles.length > 0 && (
+                  <span className="text-[#8b8b96]">
+                    {speaker ? " · " : ""}
+                    {speakerHandles.map((h) => `@${h}`).join(", ")}
+                  </span>
+                )}
+              </p>
+            )}
+            <p className="text-[11px] text-[#8b8b96] mt-1 font-mono">
               {formatRelativeTime(createdAt)}
             </p>
           </div>

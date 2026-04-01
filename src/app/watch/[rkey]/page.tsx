@@ -248,6 +248,7 @@ export default function WatchPage({ params: paramsPromise }: PageProps) {
   const [speakerHandles, setSpeakerHandles] = useState<string[]>([])
   const [creatorHandle, setCreatorHandle] = useState("")
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
+  const [sidebarSpeakers, setSidebarSpeakers] = useState<Record<string, { speaker: string; handles: string[] }>>({})
 
   const onThumbCapture = useCallback((rk: string, dataUrl: string) => {
     setThumbs((prev) => ({ ...prev, [rk]: dataUrl }))
@@ -314,6 +315,33 @@ export default function WatchPage({ params: paramsPromise }: PageProps) {
       .filter((item) => !cached[item.rkey])
     if (missing.length > 0) captureThumbsBatch(missing, onThumbCapture)
   }, [allVideos, video, onThumbCapture])
+
+  // Enrich sidebar videos with speaker info
+  useEffect(() => {
+    if (allVideos.length === 0) return
+    let cancelled = false
+    const others = allVideos.filter((v) => v.uri !== video?.uri).slice(0, 12)
+    async function enrichSidebar() {
+      const infos: Record<string, { speaker: string; handles: string[] }> = {}
+      await Promise.allSettled(
+        others.map(async (v) => {
+          const rk = extractRkey(v.uri)
+          if (v.livestream?.uri) {
+            try {
+              const ls = await fetchLivestreamRecord(v.livestream.uri)
+              if (ls) {
+                const parsed = parseSpeaker(ls.title)
+                infos[rk] = { speaker: parsed.speaker, handles: parsed.handles }
+              }
+            } catch { /* skip */ }
+          }
+        })
+      )
+      if (!cancelled) setSidebarSpeakers(infos)
+    }
+    enrichSidebar()
+    return () => { cancelled = true }
+  }, [allVideos, video])
 
   const { prevVideo, nextVideo } = useMemo(() => {
     if (!video || allVideos.length === 0) return { prevVideo: null, nextVideo: null }
@@ -502,6 +530,8 @@ export default function WatchPage({ params: paramsPromise }: PageProps) {
                     uri={v.uri}
                     compact
                     thumbDataUrl={thumbs[rk]}
+                    speaker={sidebarSpeakers[rk]?.speaker}
+                    speakerHandles={sidebarSpeakers[rk]?.handles}
                   />
                 )
               })
