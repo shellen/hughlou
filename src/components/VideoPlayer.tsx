@@ -10,7 +10,7 @@ interface VideoPlayerProps {
   thumbDataUrl?: string | null
 }
 
-type PlayerState = "idle" | "loading" | "playing" | "error"
+type PlayerState = "idle" | "loading" | "ready" | "playing" | "error"
 
 function titleToGradient(title: string) {
   let hash = 0
@@ -49,49 +49,12 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
     const gradientStyle = titleToGradient(title)
 
+    // Load HLS eagerly on mount so manifest is parsed before user clicks play.
+    // This matches how istream (working VOD JAM app) and stream.place do it —
+    // HLS loads in useEffect, not in a click handler.
     useEffect(() => {
-      return () => {
-        if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
-        const video = videoRef.current
-        if (video) {
-          const cleanup = (video as unknown as Record<string, unknown>).__safariCleanup as (() => void) | undefined
-          if (cleanup) { cleanup(); delete (video as unknown as Record<string, unknown>).__safariCleanup }
-          video.pause()
-          video.removeAttribute("src")
-          video.load()
-        }
-      }
-    }, [hlsUrl])
-
-    const handlePlay = () => {
       const video = videoRef.current
       if (!video || !hlsUrl) return
-
-      // Destroy any existing HLS instance before creating a new one
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
-
-      setState("loading")
-
-      // Autoplay recovery matching stream.place's own player pattern:
-      // try play() → if NotAllowedError, mute and retry → if still fails, show controls
-      function tryPlay() {
-        video!.play().then(() => {
-          setState("playing")
-        }).catch((err) => {
-          if (err.name === "NotAllowedError") {
-            // Browser blocked unmuted autoplay — mute and retry
-            video!.muted = true
-            video!.play().then(() => {
-              setState("playing")
-            }).catch(() => {
-              // Even muted play failed — show video with controls so user can manually play
-              setState("playing")
-            })
-          } else {
-            setState("playing")
-          }
-        })
-      }
 
       if (Hls.isSupported()) {
         const hls = new Hls({
@@ -105,7 +68,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, tryPlay)
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          setState("ready")
+        })
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad()
@@ -113,15 +78,45 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
             else setState("error")
           }
         })
-        let hasSegments = false
-        hls.on(Hls.Events.FRAG_LOADED, () => { hasSegments = true })
-        setTimeout(() => { if (!hasSegments) setState((cur) => cur === "loading" ? "error" : cur) }, 12000)
+        return () => {
+          hls.destroy()
+          hlsRef.current = null
+        }
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Safari native HLS
         video.src = hlsUrl
-        video.addEventListener("canplaythrough", tryPlay, { once: true })
+        video.addEventListener("loadedmetadata", () => setState("ready"), { once: true })
         video.addEventListener("error", () => setState("error"), { once: true })
+        return () => {
+          video.pause()
+          video.removeAttribute("src")
+          video.load()
+        }
       }
+    }, [hlsUrl])
+
+    // User clicks play — video.play() fires synchronously in the click gesture
+    const handlePlay = () => {
+      const video = videoRef.current
+      if (!video) return
+
+      setState("loading")
+
+      video.play().then(() => {
+        setState("playing")
+      }).catch((err) => {
+        if (err.name === "NotAllowedError") {
+          // Browser blocked unmuted autoplay — mute and retry
+          video.muted = true
+          video.play().then(() => {
+            setState("playing")
+          }).catch(() => {
+            setState("playing")
+          })
+        } else {
+          setState("playing")
+        }
+      })
     }
 
     const showOverlay = state !== "playing"
@@ -131,7 +126,6 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         <video
           ref={videoRef}
           controls={state === "playing"}
-          autoPlay
           playsInline
           className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}
           aria-label={title}
@@ -150,8 +144,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Idle: play button */}
-            {state === "idle" && (
+            {/* Idle / Ready: play button */}
+            {(state === "idle" || state === "ready") && (
               <button
                 onClick={handlePlay}
                 aria-label={`Play ${title}`}
