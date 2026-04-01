@@ -46,7 +46,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Outfit:wght@900&display=swap"
           rel="stylesheet"
         />
       </head>
@@ -68,11 +68,11 @@ export default function RootLayout({
                 className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"
                 aria-hidden="true"
               >
-                <span className="text-white font-black text-[11px] leading-none tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <span className="font-display text-white font-black text-[11px] leading-none tracking-tight">
                   HL
                 </span>
               </div>
-              <span className="text-[15px] font-black text-white tracking-wide uppercase hidden sm:block" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              <span className="font-display text-[15px] font-black text-white tracking-wide uppercase hidden sm:block">
                 HUGH<span className="text-blue-600">LOU</span>
               </span>
             </a>

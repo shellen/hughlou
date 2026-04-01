@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react"
-import Hls from "hls.js"
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react"
+import type HlsType from "hls.js"
+import { titleToGradient } from "@/lib/gradients"
 
 interface VideoPlayerProps {
   hlsUrl: string
@@ -10,119 +11,162 @@ interface VideoPlayerProps {
   thumbDataUrl?: string | null
 }
 
-type PlayerState = "idle" | "loading" | "ready" | "playing" | "error"
-
-function titleToGradient(title: string) {
-  let hash = 0
-  for (let i = 0; i < title.length; i++) {
-    hash = title.charCodeAt(i) + ((hash << 5) - hash)
-    hash = hash & hash
-  }
-  const palettes = [
-    { bg: "#14141f", accent: "#3b5998" },
-    { bg: "#141420", accent: "#4a6fa5" },
-    { bg: "#0f1117", accent: "#6b7280" },
-    { bg: "#170d26", accent: "#7c5cbf" },
-    { bg: "#0d1520", accent: "#4a80b5" },
-    { bg: "#111927", accent: "#5a8ec0" },
-    { bg: "#1a1425", accent: "#8b6aad" },
-    { bg: "#0e1a1f", accent: "#4a9aa8" },
-    { bg: "#131320", accent: "#7068a8" },
-    { bg: "#101825", accent: "#5580ad" },
-    { bg: "#1a150d", accent: "#a88b4a" },
-    { bg: "#0c1315", accent: "#4a9aa0" },
-    { bg: "#1a0d0d", accent: "#a06060" },
-    { bg: "#0d1a0d", accent: "#60a060" },
-    { bg: "#1a1a0d", accent: "#a0a060" },
-    { bg: "#1a0d1a", accent: "#a060a0" },
-  ]
-  return palettes[Math.abs(hash) % palettes.length]
-}
+type PlayerState = "idle" | "loading" | "playing" | "error" | "upstream-down"
 
 const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
   function VideoPlayer({ hlsUrl, title, poster, thumbDataUrl }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null)
-    const hlsRef = useRef<Hls | null>(null)
+    const hlsRef = useRef<HlsType | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
     const [state, setState] = useState<PlayerState>("idle")
 
     useImperativeHandle(ref, () => videoRef.current!, [])
 
     const gradientStyle = titleToGradient(title)
 
-    // Load HLS eagerly on mount so manifest is parsed before user clicks play.
-    // This matches how istream (working VOD JAM app) and stream.place do it —
-    // HLS loads in useEffect, not in a click handler.
     useEffect(() => {
+      return () => {
+        if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
+      }
+    }, [hlsUrl])
+
+    const handlePlay = useCallback(async () => {
       const video = videoRef.current
       if (!video || !hlsUrl) return
 
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
+
+      setState("loading")
+
+      try {
+        const probe = await fetch(hlsUrl, { method: "HEAD", signal: AbortSignal.timeout(6000) })
+        if (!probe.ok) { setState("upstream-down"); return }
+      } catch {
+        setState("upstream-down"); return
+      }
+
+      const { default: Hls } = await import("hls.js")
+
       if (Hls.isSupported()) {
         const hls = new Hls({
-          debug: false,
-          enableWorker: true,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          maxBufferSize: 30 * 1000 * 1000,
-          backBufferLength: 15,
+          manifestLoadingTimeOut: 8000,
+          manifestLoadingMaxRetry: 1,
         })
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          setState("ready")
+          video.play().then(() => setState("playing")).catch((err) => {
+            if (err.name === "NotAllowedError") {
+              video.muted = true
+              video.play().then(() => setState("playing")).catch(() => setState("playing"))
+            } else {
+              setState("playing")
+            }
+          })
         })
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad()
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) setState("upstream-down")
             else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError()
             else setState("error")
           }
         })
-        return () => {
-          hls.destroy()
-          hlsRef.current = null
-        }
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS
         video.src = hlsUrl
-        video.addEventListener("loadedmetadata", () => setState("ready"), { once: true })
-        video.addEventListener("error", () => setState("error"), { once: true })
-        return () => {
-          video.pause()
-          video.removeAttribute("src")
-          video.load()
-        }
+        video.addEventListener("loadedmetadata", () => {
+          video.play().then(() => setState("playing")).catch(() => setState("playing"))
+        }, { once: true })
+        video.addEventListener("error", () => setState("upstream-down"), { once: true })
       }
     }, [hlsUrl])
 
-    // User clicks play — video.play() fires synchronously in the click gesture
-    const handlePlay = () => {
-      const video = videoRef.current
-      if (!video) return
+    // YouTube-style keyboard controls
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Don't capture when user is typing in an input/textarea
+        const tag = (e.target as HTMLElement)?.tagName
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
 
-      setState("loading")
+        const video = videoRef.current
 
-      video.play().then(() => {
-        setState("playing")
-      }).catch((err) => {
-        if (err.name === "NotAllowedError") {
-          // Browser blocked unmuted autoplay — mute and retry
-          video.muted = true
-          video.play().then(() => {
-            setState("playing")
-          }).catch(() => {
-            setState("playing")
-          })
-        } else {
-          setState("playing")
+        switch (e.key) {
+          case " ":
+          case "k":
+            e.preventDefault()
+            if (state === "idle") {
+              handlePlay()
+            } else if (state === "playing" && video) {
+              if (video.paused) video.play()
+              else video.pause()
+            }
+            break
+          case "j":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.max(0, video.currentTime - 10)
+            }
+            break
+          case "l":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.min(video.duration, video.currentTime + 10)
+            }
+            break
+          case "ArrowLeft":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.max(0, video.currentTime - 5)
+            }
+            break
+          case "ArrowRight":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.min(video.duration, video.currentTime + 5)
+            }
+            break
+          case "ArrowUp":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.volume = Math.min(1, video.volume + 0.1)
+            }
+            break
+          case "ArrowDown":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.volume = Math.max(0, video.volume - 0.1)
+            }
+            break
+          case "m":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.muted = !video.muted
+            }
+            break
+          case "f":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              if (document.fullscreenElement) document.exitFullscreen()
+              else video.requestFullscreen?.()
+            }
+            break
         }
-      })
-    }
+      }
+
+      document.addEventListener("keydown", handleKeyDown)
+      return () => document.removeEventListener("keydown", handleKeyDown)
+    }, [state, handlePlay])
 
     const showOverlay = state !== "playing"
 
     return (
-      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-slate-900" role="region" aria-label={`Video player: ${title}`}>
+      <div
+        ref={containerRef}
+        className="w-full aspect-video sm:rounded-lg overflow-hidden relative bg-slate-950"
+        role="region"
+        aria-label={`Video player: ${title}`}
+        tabIndex={-1}
+      >
         <video
           ref={videoRef}
           controls={state === "playing"}
@@ -133,9 +177,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
         {showOverlay && (
           <div className="absolute inset-0">
-            {/* Background */}
             {(thumbDataUrl || poster) ? (
-              <img src={(thumbDataUrl || poster)!} alt={`Thumbnail for ${title}`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+              <img src={(thumbDataUrl || poster)!} alt="" className="absolute inset-0 w-full h-full object-cover" draggable={false} aria-hidden="true" />
             ) : (
               <div className="absolute inset-0 flex items-end p-8" style={{ backgroundColor: gradientStyle.bg }}>
                 <p className="text-base font-medium leading-snug line-clamp-3 opacity-40" aria-hidden="true" style={{ color: gradientStyle.accent }}>
@@ -144,17 +187,16 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Idle / Ready: play button */}
-            {(state === "idle" || state === "ready") && (
+            {state === "idle" && (
               <button
                 onClick={handlePlay}
                 aria-label={`Play ${title}`}
                 className="absolute inset-0 w-full h-full cursor-pointer group bg-transparent border-0"
               >
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-all duration-200" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-colors duration-150" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-focus-visible:scale-105 shadow-2xl">
-                    <svg className="w-7 h-7 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <div className="w-14 h-14 rounded-xl bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-colors duration-150 shadow-lg">
+                    <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   </div>
@@ -162,7 +204,6 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </button>
             )}
 
-            {/* Loading: spinner */}
             {state === "loading" && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40" role="status" aria-label="Loading video">
                 <div className="w-10 h-10 border-2 border-white/20 border-t-blue-600 rounded-full animate-spin" />
@@ -170,14 +211,43 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Error */}
+            {state === "upstream-down" && (
+              <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center gap-4 px-6" role="alert">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm font-medium">Stream.place is experiencing issues</p>
+                  <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">The VOD service is temporarily unavailable.<br />This usually resolves on its own.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setState("idle") }}
+                    className="px-4 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors duration-150"
+                  >
+                    Retry
+                  </button>
+                  <a
+                    href="https://stream.place"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 text-xs font-medium text-slate-500 hover:text-white transition-colors duration-150"
+                  >
+                    Check status
+                  </a>
+                </div>
+              </div>
+            )}
+
             {state === "error" && (
-              <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center gap-4" role="alert">
+              <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center gap-4 px-6" role="alert">
                 <p className="text-slate-400 text-sm font-medium">This VOD isn&apos;t available yet</p>
                 <p className="text-slate-500 text-xs">Still processing — check back soon</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); setState("idle") }}
-                  className="mt-1 px-5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                  className="mt-1 px-4 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors duration-150"
                 >
                   Retry
                 </button>

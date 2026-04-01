@@ -22,7 +22,7 @@ export default function WatchLaterButton({
       onClick={() => toggle(title, duration)}
       aria-label={saved ? "Remove from Watch Later" : "Watch Later"}
       className={`
-        inline-flex items-center gap-1.5 transition-all duration-150
+        inline-flex items-center gap-2 transition-all duration-150
         ${
           saved
             ? "text-sky-400 hover:text-sky-300"

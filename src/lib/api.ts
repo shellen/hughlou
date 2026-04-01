@@ -1,6 +1,21 @@
 const REPO_DID = "did:plc:rbvrr34edl5ddpuwcubjiost"
-const LIST_RECORDS_URL = `https://iameli.com/xrpc/com.atproto.repo.listRecords`
 const VOD_PLAYBACK_URL = `https://vod-beta.stream.place/xrpc/place.stream.playback.getVideoPlaylist`
+
+// Cached PDS URL — resolved once from plc.directory, then reused.
+// istream does this too: they resolve the PDS dynamically instead of hardcoding it,
+// so video listing keeps working if the PDS migrates.
+let resolvedPdsUrl: string | null = null
+
+async function getRepoPdsUrl(): Promise<string> {
+  if (resolvedPdsUrl) return resolvedPdsUrl
+  const pds = await resolvePds(REPO_DID)
+  if (pds) {
+    resolvedPdsUrl = pds
+    return pds
+  }
+  // Fallback to known PDS if resolution fails
+  return "https://iameli.com"
+}
 
 export interface VideoRecord {
   $type: string
@@ -55,6 +70,8 @@ const handleCache = new Map<string, string>()
 export async function listVideos(
   cursor?: string
 ): Promise<ListRecordsResponse> {
+  const pdsUrl = await getRepoPdsUrl()
+
   const params = new URLSearchParams({
     repo: REPO_DID,
     collection: "place.stream.video",
@@ -65,7 +82,7 @@ export async function listVideos(
     params.append("cursor", cursor)
   }
 
-  const response = await fetch(`${LIST_RECORDS_URL}?${params.toString()}`)
+  const response = await fetch(`${pdsUrl}/xrpc/com.atproto.repo.listRecords?${params.toString()}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch videos: ${response.statusText}`)
   }

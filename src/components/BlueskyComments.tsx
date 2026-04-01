@@ -39,6 +39,8 @@ function CommentCard({ comment }: { comment: Comment }) {
           <img
             src={comment.author.avatar}
             alt=""
+            width={36}
+            height={36}
             className="w-9 h-9 rounded-full bg-slate-800"
             loading="lazy"
           />
@@ -69,12 +71,12 @@ function CommentCard({ comment }: { comment: Comment }) {
           >
             @{comment.author.handle}
           </a>
-          <span className="text-[11px] text-slate-600">·</span>
+          <span className="text-[11px] text-slate-500">·</span>
           <a
             href={comment.postUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors"
+            className="text-[11px] text-slate-500 hover:text-slate-400 transition-colors"
           >
             {timeAgo(comment.createdAt)}
           </a>
@@ -86,7 +88,7 @@ function CommentCard({ comment }: { comment: Comment }) {
 
         <div className="flex items-center gap-4 mt-2">
           {comment.likeCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-slate-600">
+            <span className="flex items-center gap-1 text-[11px] text-slate-500">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
               </svg>
@@ -94,7 +96,7 @@ function CommentCard({ comment }: { comment: Comment }) {
             </span>
           )}
           {comment.replyCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-slate-600">
+            <span className="flex items-center gap-1 text-[11px] text-slate-500">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
               </svg>
@@ -105,7 +107,7 @@ function CommentCard({ comment }: { comment: Comment }) {
             href={comment.postUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-slate-600 hover:text-indigo-300 transition-colors ml-auto"
+            className="text-[11px] text-slate-500 hover:text-indigo-300 transition-colors ml-auto"
             aria-label="View on Bluesky"
           >
             View on Bluesky
@@ -204,14 +206,14 @@ export default function BlueskyComments({
               href={shareUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-[12px] text-indigo-300 hover:text-white transition-colors font-medium"
+              className="inline-flex items-center gap-2 text-xs text-indigo-300 hover:text-white transition-colors font-medium"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 600 530" fill="currentColor" aria-hidden="true">
                 <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
               </svg>
               Join the conversation
             </a>
-            <span className="text-[11px] text-slate-600">
+            <span className="text-[11px] text-slate-500">
               Powered by Bluesky
             </span>
           </div>

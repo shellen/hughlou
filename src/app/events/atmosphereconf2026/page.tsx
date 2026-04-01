@@ -200,8 +200,7 @@ function Home() {
           {/* Conference banner */}
           <div className="bg-slate-900 px-6 sm:px-10 pt-8 pb-4">
             <p
-              className="text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
-              style={{ fontFamily: "'Outfit', sans-serif" }}
+              className="font-display text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
               aria-hidden="true"
             >
               ATMOSPHERE
@@ -210,18 +209,16 @@ function Home() {
           <div className="flex items-stretch">
             <div className="bg-slate-900 pl-6 sm:pl-10 pr-2 sm:pr-3 flex items-center pb-6 pt-0">
               <p
-                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
-                style={{ fontFamily: "'Outfit', sans-serif" }}
-                aria-hidden="true"
+                className="font-display text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
+                  aria-hidden="true"
               >
                 CONF
               </p>
             </div>
             <div className="bg-blue-600 pl-3 sm:pl-4 pr-4 sm:pr-6 flex items-center flex-1 rounded-tl-2xl pb-6 pt-0">
               <p
-                className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
-                style={{ fontFamily: "'Outfit', sans-serif" }}
-              >
+                className="font-display text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
+                >
                 VANCOUVER &middot; 2026
               </p>
             </div>
@@ -253,7 +250,7 @@ function Home() {
           <span className="sr-only">Loading talks…</span>
           <div>
             <div className="h-6 w-64 skeleton rounded mb-8" aria-hidden="true" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-10" aria-hidden="true">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8" aria-hidden="true">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="space-y-3">
                   <div className="aspect-video rounded-lg skeleton" />
@@ -282,7 +279,7 @@ function Home() {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8">
                   {dayVideos.map((video) => {
                     const rkey = extractRkey(video.uri)
                     return (
