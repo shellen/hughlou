@@ -39,6 +39,8 @@ function CommentCard({ comment }: { comment: Comment }) {
           <img
             src={comment.author.avatar}
             alt=""
+            width={36}
+            height={36}
             className="w-9 h-9 rounded-full bg-slate-800"
             loading="lazy"
           />
