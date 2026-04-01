@@ -14,7 +14,7 @@ Built for the [Streamplace VOD JAM](https://blog.stream.place/3micfu6ifyk2a).
 - Browse and search all conference talks by title, speaker, or Bluesky handle
 - HLS video playback via [hls.js](https://github.com/video-dev/hls.js) with native Safari fallback
 - Memory-optimized video: capped HLS buffers (30 MB), back-buffer eviction, lazy-loaded thumbnails
-- Async thumbnail generation (captured from video frames, cached in localStorage)
+- Thumbnails from livestream records with async canvas-capture fallback, cached in localStorage
 - Bluesky comment threads — replies to the stream post and mentions of the talk URL appear as comments
 - Speaker handles auto-linked to Bluesky profiles
 - Share to Bluesky, copy link, or send via Messages
@@ -51,8 +51,22 @@ The transcript feature uses the [Web Speech API](https://developer.mozilla.org/e
 
 1. Fetches `place.stream.video` records from the AT Protocol PDS via `com.atproto.repo.listRecords`
 2. Resolves livestream metadata (speaker names, handles, thumbnails) from linked `place.stream.livestream` records
-3. Plays HLS video streams using the Streamplace VOD beta endpoint (`vod-beta.stream.place`)
+3. Plays HLS video streams via a same-origin VOD proxy (see below)
 4. Pulls Bluesky post threads via `app.bsky.feed.getPostThread` and search via `app.bsky.feed.searchPosts` to populate discussion
+
+### VOD Proxy
+
+HLS.js fetches video manifests and segments via XHR, which means the VOD server (`vod-beta.stream.place`) must send CORS headers for the browser to allow playback. Rather than depending on upstream CORS configuration, HughLou routes all VOD requests through a Next.js API route at `/api/vod/[...method]`.
+
+How it works:
+
+- `getVideoHlsUrl()` returns `/api/vod/place.stream.playback.getVideoPlaylist?uri=...` instead of a direct VOD URL
+- The proxy forwards the request to `vod-beta.stream.place`, whitelisting only three XRPC methods: `getVideoPlaylist`, `getInitSegment`, and `getVideoBlob`
+- HLS manifests contain absolute URLs back to the VOD server — the proxy rewrites these to `/api/vod/` paths so segment fetches also stay same-origin
+- `Range` headers are forwarded for proper video seeking/scrubbing
+- Segments are cached immutably; manifests are cached for 5 seconds
+
+This also fixes thumbnail generation: since video requests are now same-origin, canvas frame capture (used for async thumbnails) no longer triggers cross-origin tainting. As a fallback, thumbnails are also resolved from blob references stored in the livestream records via `com.atproto.sync.getBlob`.
 
 ## Getting Started
 
@@ -133,6 +147,9 @@ src/
     events/atmosphereconf2026/
       layout.tsx                            # Event SEO metadata
       page.tsx                              # Event listing: talk grid, search, day grouping
+    api/
+      bsky/route.ts                         # CORS proxy for Bluesky public API
+      vod/[...method]/route.ts              # CORS proxy for Streamplace VOD (HLS)
     watch/[rkey]/
       page.tsx                              # Server wrapper with generateMetadata
       WatchClient.tsx                       # Watch: player, breadcrumb, actions, comments
