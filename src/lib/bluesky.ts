@@ -1,4 +1,5 @@
-const BSKY_PUBLIC_API = "https://public.api.bsky.app/xrpc"
+// Proxy Bluesky API calls through our Next.js route to avoid CORS issues
+const BSKY_PROXY = "/api/bsky"
 
 // Posts to filter out — generic stream announcements that appear on every video
 const FILTERED_POST_URIS = new Set([
@@ -85,12 +86,13 @@ export async function fetchThreadReplies(
 ): Promise<Comment[]> {
   try {
     const params = new URLSearchParams({
+      method: "app.bsky.feed.getPostThread",
       uri: postUri,
       depth: "6",
       parentHeight: "0",
     })
     const resp = await fetch(
-      `${BSKY_PUBLIC_API}/app.bsky.feed.getPostThread?${params}`
+      `${BSKY_PROXY}?${params}`
     )
     if (!resp.ok) return []
     const data = await resp.json()
@@ -119,13 +121,13 @@ export async function searchMentions(
   videoUrl: string
 ): Promise<Comment[]> {
   try {
-    // Search for the URL
     const params = new URLSearchParams({
+      method: "app.bsky.feed.searchPosts",
       q: videoUrl,
       limit: "25",
     })
     const resp = await fetch(
-      `${BSKY_PUBLIC_API}/app.bsky.feed.searchPosts?${params}`
+      `${BSKY_PROXY}?${params}`
     )
     if (!resp.ok) return []
     const data = await resp.json()

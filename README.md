@@ -4,21 +4,48 @@
 
 HughLou is an open-source conference video replay app. It pulls talk recordings from [Streamplace](https://stream.place) VOD via the AT Protocol, threads in Bluesky discussion as comments, and gives every talk a permanent, shareable URL.
 
-Currently serving [ATmosphereConf 2026](https://hughlou.com) — three days of talks on decentralized identity, social networking, data sovereignty, and the open web from Vancouver, BC.
+Currently serving [ATmosphereConf 2026](https://hughlou.com/events/atmosphereconf2026) — three days of talks on decentralized identity, social networking, data sovereignty, and the open web from Vancouver, BC.
 
 Built for the [Streamplace VOD JAM](https://blog.stream.place/3micfu6ifyk2a).
 
 ## Features
 
+- **Event archive structure** — `/events/atmosphereconf2026/` with room for future events
 - Browse and search all conference talks by title, speaker, or Bluesky handle
 - HLS video playback via [hls.js](https://github.com/video-dev/hls.js) with native Safari fallback
+- Memory-optimized video: capped HLS buffers (30 MB), back-buffer eviction, lazy-loaded thumbnails
 - Async thumbnail generation (captured from video frames, cached in localStorage)
 - Bluesky comment threads — replies to the stream post and mentions of the talk URL appear as comments
 - Speaker handles auto-linked to Bluesky profiles
 - Share to Bluesky, copy link, or send via Messages
-- Prev/next talk navigation
+- **Watch Later queue** — save talks for later (stored locally, no account needed)
+- **Live transcription** — experimental browser-based transcription using the Web Speech API (see below)
+- Prev/next talk navigation with breadcrumb trail
+- OpenGraph and Twitter card metadata for every talk
 - WCAG-compliant: skip links, focus-visible outlines, proper contrast ratios, ARIA labels, reduced-motion support
-- Fully responsive
+- Fully responsive with a slate-toned dark theme
+- **No tracking, analytics, or cookies** — zero third-party scripts
+
+## Local-First Design
+
+HughLou has no login system or server-side user state. Everything personal is stored in your browser's localStorage:
+
+- **Watch Later queue** — saved talks persist across sessions in the same browser
+- **Thumbnail cache** — captured video frames are stored locally to avoid re-fetching
+- **Transcripts** — generated transcripts are cached so you only need to run them once
+
+Clear your browser data to reset everything.
+
+## Experimental: Live Transcription
+
+The transcript feature uses the [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API), a browser-native speech recognition service. It listens to your device's audio output while a talk plays and generates a time-stamped transcript in real time.
+
+**Important caveats:**
+- Browser support varies — works best in Chrome/Edge, limited in Firefox, not available in all browsers
+- Accuracy depends on audio quality, speaker clarity, and ambient noise
+- The browser may request microphone permission even though it's listening to playback audio
+- Transcripts are cached locally after generation
+- This is not a server-side transcription service — no audio leaves your device
 
 ## How It Works
 
@@ -42,57 +69,125 @@ No environment variables or API keys required — all data is fetched from publi
 
 ## Deploying
 
-HughLou is a standard Next.js app. Deploy to any platform that supports it:
+HughLou is a standard Next.js 16 app. Deploy to any platform that supports it.
 
-**Vercel** (recommended):
+### Vercel
+
 ```bash
-npx vercel
+npm i -g vercel
+vercel
 ```
 
-**Netlify**, **Cloudflare Pages**, or any Node.js host — just run `npm run build` and serve the output.
+Or connect your GitHub repo at [vercel.com/new](https://vercel.com/new) for automatic deploys on push.
+
+### Netlify
+
+The repo includes a `netlify.toml` config. Connect your GitHub repo at [app.netlify.com](https://app.netlify.com) or deploy via CLI:
+
+```bash
+npm i -g netlify-cli
+netlify deploy --build --prod
+```
+
+### Cloudflare Pages
+
+```bash
+npm run build
+npx wrangler pages deploy .next --project-name hughlou
+```
+
+Or connect your GitHub repo in the [Cloudflare dashboard](https://dash.cloudflare.com) with:
+- Build command: `npm run build`
+- Build output directory: `.next`
+- Node.js version: 20+
+
+You may need the [`@cloudflare/next-on-pages`](https://github.com/cloudflare/next-on-pages) adapter for full Next.js compatibility.
+
+### Self-Hosted / Docker
+
+```bash
+npm run build
+npm start
+```
+
+Runs on port 3000 by default. Put behind nginx, Caddy, or any reverse proxy.
 
 ## Tech Stack
 
 - **Next.js 16** with App Router and Turbopack
 - **TypeScript** in strict mode
-- **Tailwind CSS v4** for styling
+- **Tailwind CSS v4** for styling (slate dark theme)
 - **hls.js** for HLS video playback
 - **AT Protocol** for data (via XRPC — no SDK required)
 - **Bluesky API** for threaded comments
+- **Web Speech API** for experimental transcription
 
 ## Project Structure
 
 ```
 src/
   app/
-    layout.tsx       # Shell: header, footer, skip links
-    page.tsx         # Home: talk grid with search, day grouping
-    globals.css      # Tailwind + custom props + a11y styles
+    layout.tsx                              # Shell: header, footer, skip links
+    page.tsx                                # Redirect to current event
+    globals.css                             # Tailwind + custom props + a11y styles
+    events/atmosphereconf2026/
+      layout.tsx                            # Event SEO metadata
+      page.tsx                              # Event listing: talk grid, search, day grouping
     watch/[rkey]/
-      page.tsx       # Watch: video player, metadata, actions, comments
+      page.tsx                              # Server wrapper with generateMetadata
+      WatchClient.tsx                       # Watch: player, breadcrumb, actions, comments
   components/
-    VideoCard.tsx    # Talk card (grid + compact sidebar variants)
-    VideoPlayer.tsx  # HLS player with poster, states, keyboard a11y
-    BlueskyComments.tsx  # Threaded Bluesky discussion
-    TranscriptPanel.tsx  # Experimental Web Speech API transcription
+    VideoCard.tsx                           # Talk card (grid + compact sidebar variants)
+    VideoPlayer.tsx                         # HLS player with poster, states, keyboard a11y
+    BlueskyComments.tsx                     # Threaded Bluesky discussion
+    TranscriptPanel.tsx                     # Experimental Web Speech API transcription
+    WatchLaterButton.tsx                    # Watch Later toggle
+    WatchLaterQueue.tsx                     # Sidebar queue of saved talks
+  hooks/
+    useWatchLater.ts                        # React hooks for Watch Later state
   lib/
-    api.ts           # AT Protocol data fetching, parsing, formatting
-    bluesky.ts       # Bluesky thread + search comment aggregation
-    thumbnails.ts    # Async canvas-based thumbnail capture + caching
-    transcription.ts # Web Speech API service
+    api.ts                                  # AT Protocol data fetching, parsing, formatting
+    bluesky.ts                              # Bluesky thread + search comment aggregation
+    thumbnails.ts                           # Async canvas-based thumbnail capture + caching
+    transcription.ts                        # Web Speech API service
+    watchLater.ts                           # Watch Later localStorage management
 ```
 
 ## Adapting for Another Conference
 
-HughLou is built to replay Streamplace-powered conferences. To point it at a different one:
+HughLou is built to replay Streamplace-powered conferences. To add a new event:
 
-1. Update `REPO_DID` in `src/lib/api.ts` to the DID of the Streamplace account that recorded the conference
-2. Update `DAY_LABELS` in `src/app/page.tsx` with the conference dates
-3. Update branding in `src/app/layout.tsx`
+1. Create a new route at `src/app/events/yourconf2027/`
+2. Update `REPO_DID` in `src/lib/api.ts` to the DID of the Streamplace account that recorded the conference
+3. Update `DAY_LABELS` with the conference dates
+4. Update the redirect in `src/app/page.tsx` to point to the new event
+5. Update branding in `src/app/layout.tsx`
+
+Previous events remain accessible at their original URLs as archives.
+
+### Tangled
+
+[Tangled](https://tangled.org) is a git collaboration platform built on the AT Protocol. To mirror your repo there:
+
+1. Sign in at [tangled.org](https://tangled.org) with your AT Protocol identity (Bluesky handle works)
+2. Create a new repository
+3. Add Tangled as a remote and push:
+   ```bash
+   git remote add tangled https://tangled.org/<your-handle>/hughlou.git
+   git push tangled main
+   ```
+
+## VOD JAM Submission
+
+This project was built for the [Streamplace VOD JAM](https://blog.stream.place/3micfu6ifyk2a).
+
+- **Public endpoint:** [hughlou.com](https://hughlou.com)
+- **Source:** [github.com/shellen/hughlou](https://github.com/shellen/hughlou)
+- **License:** MIT
 
 ## AI Disclosure
 
-This project was built with the assistance of Claude (Anthropic) via Cowork mode.
+This project was built with the assistance of Claude (Anthropic) via Claude Code.
 
 ## License
 

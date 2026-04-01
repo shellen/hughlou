@@ -124,6 +124,8 @@ export default function RootLayout({
               </p>
               <p className="text-[10px] text-slate-600 shrink-0">
                 No copyright is claimed over linked or embedded content.
+                <br />
+                No tracking, analytics, or cookies.
               </p>
             </div>
           </div>
