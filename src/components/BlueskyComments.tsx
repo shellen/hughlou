@@ -5,9 +5,7 @@ import { fetchAllComments, Comment } from "@/lib/bluesky"
 
 interface BlueskyCommentsProps {
   postUri: string | null
-  videoPageUrl: string
   shareUrl: string
-  streamplaceUrl?: string | null
 }
 
 function timeAgo(isoDate: string): string {
@@ -120,9 +118,7 @@ function CommentCard({ comment }: { comment: Comment }) {
 
 export default function BlueskyComments({
   postUri,
-  videoPageUrl,
   shareUrl,
-  streamplaceUrl,
 }: BlueskyCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -133,7 +129,7 @@ export default function BlueskyComments({
     setLoading(true)
     setComments([])
 
-    fetchAllComments(postUri, videoPageUrl, streamplaceUrl).then((results) => {
+    fetchAllComments(postUri).then((results) => {
       if (!cancelled) {
         setComments(results)
         setLoading(false)
@@ -143,7 +139,7 @@ export default function BlueskyComments({
     return () => {
       cancelled = true
     }
-  }, [postUri, videoPageUrl])
+  }, [postUri])
 
   const visibleComments = showAll ? comments : comments.slice(0, 5)
   const hasMore = comments.length > 5

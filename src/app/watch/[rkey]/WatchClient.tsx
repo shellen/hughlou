@@ -514,9 +514,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
           {/* Bluesky Comments */}
           <BlueskyComments
             postUri={livestream?.post?.uri || null}
-            videoPageUrl={`https://hughlou.com/watch/${rkey}`}
             shareUrl={shareUrl}
-            streamplaceUrl={streamplaceUrl}
           />
         </div>
 
