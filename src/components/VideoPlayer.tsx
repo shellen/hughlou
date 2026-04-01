@@ -72,6 +72,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
       setState("loading")
 
+      // Transition to "playing" when actual frames render, not when play() resolves
+      video.addEventListener("playing", () => setState("playing"), { once: true })
+
       if (Hls.isSupported()) {
         const hls = new Hls({
           debug: false,
@@ -84,9 +87,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().then(() => setState("playing")).catch(() => setState("playing"))
-        })
+        // Call play() synchronously in click handler to preserve user gesture.
+        // The browser queues playback until HLS.js feeds data to the media source.
+        video.play().catch(() => {})
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad()
@@ -98,18 +101,10 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         hls.on(Hls.Events.FRAG_LOADED, () => { hasSegments = true })
         setTimeout(() => { if (!hasSegments) setState((cur) => cur === "loading" ? "error" : cur) }, 12000)
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        // Safari native HLS
         video.src = hlsUrl
-        const onMeta = () => {
-          video.play().then(() => setState("playing")).catch(() => setState("playing"))
-        }
-        const onErr = () => setState("error")
-        video.addEventListener("loadedmetadata", onMeta, { once: true })
-        video.addEventListener("error", onErr, { once: true })
-        // Store refs for cleanup
-        ;(video as unknown as Record<string, unknown>).__safariCleanup = () => {
-          video.removeEventListener("loadedmetadata", onMeta)
-          video.removeEventListener("error", onErr)
-        }
+        video.play().catch(() => {})
+        video.addEventListener("error", () => setState("error"), { once: true })
       }
     }
 
