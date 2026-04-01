@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react"
-import type HlsType from "hls.js"
+import Artplayer from "artplayer"
 import { titleToGradient } from "@/lib/gradients"
 
 interface VideoPlayerProps {
@@ -15,29 +15,37 @@ type PlayerState = "idle" | "loading" | "playing" | "error" | "upstream-down"
 
 const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
   function VideoPlayer({ hlsUrl, title, poster, thumbDataUrl }, ref) {
-    const videoRef = useRef<HTMLVideoElement>(null)
-    const hlsRef = useRef<HlsType | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
+    const artRef = useRef<Artplayer | null>(null)
+    const videoElRef = useRef<HTMLVideoElement | null>(null)
     const [state, setState] = useState<PlayerState>("idle")
 
-    useImperativeHandle(ref, () => videoRef.current!, [])
+    useImperativeHandle(ref, () => videoElRef.current!, [])
 
     const gradientStyle = titleToGradient(title)
 
+    // Cleanup ArtPlayer on unmount or URL change
     useEffect(() => {
       return () => {
-        if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
+        if (artRef.current) {
+          artRef.current.destroy(false)
+          artRef.current = null
+        }
       }
     }, [hlsUrl])
 
     const handlePlay = useCallback(async () => {
-      const video = videoRef.current
-      if (!video || !hlsUrl) return
+      if (!containerRef.current || !hlsUrl) return
 
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
+      // Destroy previous instance
+      if (artRef.current) {
+        artRef.current.destroy(false)
+        artRef.current = null
+      }
 
       setState("loading")
 
+      // Probe upstream availability
       try {
         const probe = await fetch(hlsUrl, { method: "HEAD", signal: AbortSignal.timeout(6000) })
         if (!probe.ok) { setState("upstream-down"); return }
@@ -45,134 +53,95 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         setState("upstream-down"); return
       }
 
+      // Dynamically import hls.js for tree-shaking
       const { default: Hls } = await import("hls.js")
 
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          manifestLoadingTimeOut: 8000,
-          manifestLoadingMaxRetry: 1,
-        })
-        hlsRef.current = hls
-        hls.loadSource(hlsUrl)
-        hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().then(() => setState("playing")).catch((err) => {
-            if (err.name === "NotAllowedError") {
-              video.muted = true
-              video.play().then(() => setState("playing")).catch(() => setState("playing"))
-            } else {
-              setState("playing")
+      const art = new Artplayer({
+        container: containerRef.current,
+        url: hlsUrl,
+        type: "m3u8",
+        customType: {
+          m3u8: function (video: HTMLVideoElement, url: string, art: Artplayer) {
+            if (Hls.isSupported()) {
+              const hls = new Hls({
+                manifestLoadingTimeOut: 8000,
+                manifestLoadingMaxRetry: 1,
+              })
+              hls.loadSource(url)
+              hls.attachMedia(video)
+              hls.on(Hls.Events.ERROR, (_event: string, data: { fatal: boolean; type: string }) => {
+                if (data.fatal) {
+                  if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                    setState("upstream-down")
+                  } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                    hls.recoverMediaError()
+                  } else {
+                    setState("error")
+                  }
+                }
+              })
+              art.on("destroy", () => hls.destroy())
+            } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+              video.src = url
+              video.addEventListener("error", () => setState("upstream-down"), { once: true })
             }
-          })
-        })
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-          if (data.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) setState("upstream-down")
-            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError()
-            else setState("error")
+          },
+        },
+        poster: thumbDataUrl || poster || "",
+        volume: 0.8,
+        muted: false,
+        autoplay: true,
+        autoMini: false,
+        autoSize: false,
+        autoOrientation: true,
+        playbackRate: true,
+        aspectRatio: false,
+        fullscreen: true,
+        fullscreenWeb: true,
+        pip: true,
+        setting: true,
+        flip: false,
+        lock: true,
+        fastForward: true,
+        theme: "#3b82f6",
+        lang: "en",
+      })
+
+      artRef.current = art
+      videoElRef.current = art.video
+
+      art.on("ready", () => {
+        videoElRef.current = art.video
+        art.play().then(() => {
+          setState("playing")
+        }).catch((err: Error) => {
+          if (err.name === "NotAllowedError") {
+            art.muted = true
+            art.play().then(() => setState("playing")).catch(() => setState("playing"))
+          } else {
+            setState("playing")
           }
         })
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = hlsUrl
-        video.addEventListener("loadedmetadata", () => {
-          video.play().then(() => setState("playing")).catch(() => setState("playing"))
-        }, { once: true })
-        video.addEventListener("error", () => setState("upstream-down"), { once: true })
-      }
-    }, [hlsUrl])
+      })
 
-    // YouTube-style keyboard controls
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        // Don't capture when user is typing in an input/textarea
-        const tag = (e.target as HTMLElement)?.tagName
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
-
-        const video = videoRef.current
-
-        switch (e.key) {
-          case " ":
-          case "k":
-            e.preventDefault()
-            if (state === "idle") {
-              handlePlay()
-            } else if (state === "playing" && video) {
-              if (video.paused) video.play()
-              else video.pause()
-            }
-            break
-          case "j":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              video.currentTime = Math.max(0, video.currentTime - 10)
-            }
-            break
-          case "l":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              video.currentTime = Math.min(video.duration, video.currentTime + 10)
-            }
-            break
-          case "ArrowLeft":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              video.currentTime = Math.max(0, video.currentTime - 5)
-            }
-            break
-          case "ArrowRight":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              video.currentTime = Math.min(video.duration, video.currentTime + 5)
-            }
-            break
-          case "ArrowUp":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              video.volume = Math.min(1, video.volume + 0.1)
-            }
-            break
-          case "ArrowDown":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              video.volume = Math.max(0, video.volume - 0.1)
-            }
-            break
-          case "m":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              video.muted = !video.muted
-            }
-            break
-          case "f":
-            if (state === "playing" && video) {
-              e.preventDefault()
-              if (document.fullscreenElement) document.exitFullscreen()
-              else video.requestFullscreen?.()
-            }
-            break
-        }
-      }
-
-      document.addEventListener("keydown", handleKeyDown)
-      return () => document.removeEventListener("keydown", handleKeyDown)
-    }, [state, handlePlay])
+      art.on("error", () => {
+        setState("error")
+      })
+    }, [hlsUrl, poster, thumbDataUrl])
 
     const showOverlay = state !== "playing"
 
     return (
       <div
-        ref={containerRef}
         className="w-full aspect-video sm:rounded-lg overflow-hidden relative bg-slate-950"
         role="region"
         aria-label={`Video player: ${title}`}
         tabIndex={-1}
       >
-        <video
-          ref={videoRef}
-          controls={state === "playing"}
-          playsInline
+        {/* ArtPlayer container — hidden until playing */}
+        <div
+          ref={containerRef}
           className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}
-          aria-label={title}
         />
 
         {showOverlay && (
