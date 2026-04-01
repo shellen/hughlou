@@ -51,24 +51,10 @@ The transcript feature uses the [Web Speech API](https://developer.mozilla.org/e
 
 1. Fetches `place.stream.video` records from the AT Protocol PDS via `com.atproto.repo.listRecords`
 2. Resolves livestream metadata (speaker names, handles, thumbnails) from linked `place.stream.livestream` records
-3. Plays HLS video streams via a same-origin VOD proxy (see below)
-4. Pulls Bluesky post threads via `app.bsky.feed.getPostThread` and search via `app.bsky.feed.searchPosts` to populate discussion
+3. Plays HLS video streams directly from the Streamplace VOD server (`vod-beta.stream.place`) — no video bytes are proxied through the app
+4. Pulls Bluesky post threads via `app.bsky.feed.getPostThread` to populate discussion
 
-### VOD Proxy
-
-HLS.js fetches video manifests and segments via XHR, which means the VOD server (`vod-beta.stream.place`) must send CORS headers for the browser to allow playback. Rather than depending on upstream CORS configuration, HughLou routes all VOD requests through a Next.js API route at `/api/vod/[...method]`.
-
-How it works:
-
-- `getVideoHlsUrl()` returns `/api/vod/place.stream.playback.getVideoPlaylist?uri=...` instead of a direct VOD URL
-- The proxy forwards the request to `vod-beta.stream.place`, whitelisting only three XRPC methods: `getVideoPlaylist`, `getInitSegment`, and `getVideoBlob`
-- HLS manifests contain absolute URLs back to the VOD server — the proxy rewrites these to `/api/vod/` paths so segment fetches also stay same-origin
-- `Range` headers are forwarded for proper video seeking/scrubbing
-- Segments are cached immutably; manifests are cached for 5 seconds
-
-This also fixes thumbnail generation: since video requests are now same-origin, canvas frame capture (used for async thumbnails) no longer triggers cross-origin tainting. As a fallback, thumbnails are also resolved from blob references stored in the livestream records via `com.atproto.sync.getBlob`.
-
-**Note:** Streamplace VOD is in beta. The VOD endpoint URL, XRPC method names, and response formats may change as encoding and infrastructure evolve on the stream.place side. If video playback breaks after an upstream change, check `VOD_HOST` in `src/app/api/vod/[...method]/route.ts` and the XRPC method whitelist. Video AT URIs (`at://` identifiers) are stable — only the playback delivery layer is subject to change.
+**Note:** Streamplace VOD is in beta. The VOD endpoint URL, XRPC method names, and response formats may change as encoding and infrastructure evolve on the stream.place side. If video playback breaks after an upstream change, check `VOD_PLAYBACK_URL` in `src/lib/api.ts`. Video AT URIs (`at://` identifiers) are stable — only the playback delivery layer is subject to change.
 
 ## Getting Started
 
@@ -150,8 +136,7 @@ src/
       layout.tsx                            # Event SEO metadata
       page.tsx                              # Event listing: talk grid, search, day grouping
     api/
-      bsky/route.ts                         # CORS proxy for Bluesky public API
-      vod/[...method]/route.ts              # CORS proxy for Streamplace VOD (HLS)
+      bsky/route.ts                         # Proxy for Bluesky public API (getPostThread)
     watch/[rkey]/
       page.tsx                              # Server wrapper with generateMetadata
       WatchClient.tsx                       # Watch: player, breadcrumb, actions, comments

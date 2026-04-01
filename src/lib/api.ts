@@ -1,6 +1,6 @@
 const REPO_DID = "did:plc:rbvrr34edl5ddpuwcubjiost"
 const LIST_RECORDS_URL = `https://iameli.com/xrpc/com.atproto.repo.listRecords`
-const VOD_PLAYBACK_URL = `/api/vod/place.stream.playback.getVideoPlaylist`
+const VOD_PLAYBACK_URL = `https://vod-beta.stream.place/xrpc/place.stream.playback.getVideoPlaylist`
 
 export interface VideoRecord {
   $type: string

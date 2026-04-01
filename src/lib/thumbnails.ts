@@ -110,9 +110,16 @@ export async function captureThumb(
       }
     }
 
-    function seekAndCapture() {
+    function seekTo(time: number) {
       video.addEventListener("seeked", onSeeked, { once: true })
-      video.currentTime = Math.min(SEEK_TIME, video.duration > 0 ? video.duration * 0.1 : SEEK_TIME)
+      video.currentTime = time
+    }
+
+    // Wait until the video has data, then seek to SEEK_TIME
+    function onCanPlay() {
+      const target = Math.min(SEEK_TIME, video.duration > 0 ? video.duration * 0.1 : SEEK_TIME)
+      // If we're already near position 0, we need to seek forward
+      seekTo(target)
     }
 
     // Try loading
@@ -125,18 +132,24 @@ export async function captureThumb(
           // Only load enough to capture a frame
           maxBufferLength: 5,
           maxMaxBufferLength: 10,
+          startPosition: SEEK_TIME,
         })
         hlsInstance = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, seekAndCapture)
+        // Wait for first fragment to load so the video has actual data
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          // Only seek once — FRAG_LOADED fires for every fragment
+          hls.off(Hls.Events.FRAG_LOADED)
+          video.addEventListener("canplay", onCanPlay, { once: true })
+        })
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) cleanup(null)
         })
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Safari native HLS
         video.src = hlsUrl
-        video.addEventListener("loadedmetadata", seekAndCapture, { once: true })
+        video.addEventListener("canplay", onCanPlay, { once: true })
         video.addEventListener("error", () => cleanup(null), { once: true })
       } else {
         cleanup(null)
