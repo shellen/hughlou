@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react"
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react"
 import type HlsType from "hls.js"
 import { titleToGradient } from "@/lib/gradients"
 
@@ -17,6 +17,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
   function VideoPlayer({ hlsUrl, title, poster, thumbDataUrl }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const hlsRef = useRef<HlsType | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
     const [state, setState] = useState<PlayerState>("idle")
 
     useImperativeHandle(ref, () => videoRef.current!, [])
@@ -29,7 +30,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
       }
     }, [hlsUrl])
 
-    const handlePlay = async () => {
+    const handlePlay = useCallback(async () => {
       const video = videoRef.current
       if (!video || !hlsUrl) return
 
@@ -78,12 +79,94 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         }, { once: true })
         video.addEventListener("error", () => setState("upstream-down"), { once: true })
       }
-    }
+    }, [hlsUrl])
+
+    // YouTube-style keyboard controls
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Don't capture when user is typing in an input/textarea
+        const tag = (e.target as HTMLElement)?.tagName
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
+
+        const video = videoRef.current
+
+        switch (e.key) {
+          case " ":
+          case "k":
+            e.preventDefault()
+            if (state === "idle") {
+              handlePlay()
+            } else if (state === "playing" && video) {
+              if (video.paused) video.play()
+              else video.pause()
+            }
+            break
+          case "j":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.max(0, video.currentTime - 10)
+            }
+            break
+          case "l":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.min(video.duration, video.currentTime + 10)
+            }
+            break
+          case "ArrowLeft":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.max(0, video.currentTime - 5)
+            }
+            break
+          case "ArrowRight":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.currentTime = Math.min(video.duration, video.currentTime + 5)
+            }
+            break
+          case "ArrowUp":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.volume = Math.min(1, video.volume + 0.1)
+            }
+            break
+          case "ArrowDown":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.volume = Math.max(0, video.volume - 0.1)
+            }
+            break
+          case "m":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              video.muted = !video.muted
+            }
+            break
+          case "f":
+            if (state === "playing" && video) {
+              e.preventDefault()
+              if (document.fullscreenElement) document.exitFullscreen()
+              else video.requestFullscreen?.()
+            }
+            break
+        }
+      }
+
+      document.addEventListener("keydown", handleKeyDown)
+      return () => document.removeEventListener("keydown", handleKeyDown)
+    }, [state, handlePlay])
 
     const showOverlay = state !== "playing"
 
     return (
-      <div className="w-full aspect-video sm:rounded-lg overflow-hidden relative bg-slate-950" role="region" aria-label={`Video player: ${title}`}>
+      <div
+        ref={containerRef}
+        className="w-full aspect-video sm:rounded-lg overflow-hidden relative bg-slate-950"
+        role="region"
+        aria-label={`Video player: ${title}`}
+        tabIndex={-1}
+      >
         <video
           ref={videoRef}
           controls={state === "playing"}

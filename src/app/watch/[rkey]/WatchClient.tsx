@@ -234,6 +234,7 @@ interface PageProps {
 
 export default function WatchClient({ params: paramsPromise }: PageProps) {
   const { rkey } = React.use(paramsPromise) as { rkey: string }
+  const router = useRouter()
   const videoElRef = useRef<HTMLVideoElement | null>(null)
   const [video, setVideo] = useState<VideoRecord | null>(null)
   const [hlsUrl, setHlsUrl] = useState("")
@@ -360,6 +361,25 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
       nextVideo: currentIdx < sorted.length - 1 ? sorted[currentIdx + 1] : null,
     }
   }, [video, allVideos])
+
+  // Keyboard navigation: Shift+N → next video, Shift+P → prev video
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
+
+      if (e.shiftKey && e.key === "N" && nextVideo) {
+        e.preventDefault()
+        router.push(`/watch/${extractRkey(nextVideo.uri)}`)
+      }
+      if (e.shiftKey && e.key === "P" && prevVideo) {
+        e.preventDefault()
+        router.push(`/watch/${extractRkey(prevVideo.uri)}`)
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [nextVideo, prevVideo, router])
 
   if (loading) {
     return (
