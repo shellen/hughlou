@@ -72,9 +72,6 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
       setState("loading")
 
-      // Transition to "playing" when actual frames render, not when play() resolves
-      video.addEventListener("playing", () => setState("playing"), { once: true })
-
       if (Hls.isSupported()) {
         const hls = new Hls({
           debug: false,
@@ -87,9 +84,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
-        // Call play() synchronously in click handler to preserve user gesture.
-        // The browser queues playback until HLS.js feeds data to the media source.
-        video.play().catch(() => {})
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().then(() => setState("playing")).catch(() => setState("playing"))
+        })
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad()
@@ -103,7 +100,10 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Safari native HLS
         video.src = hlsUrl
-        video.play().catch(() => {})
+        const onMeta = () => {
+          video.play().then(() => setState("playing")).catch(() => setState("playing"))
+        }
+        video.addEventListener("loadedmetadata", onMeta, { once: true })
         video.addEventListener("error", () => setState("error"), { once: true })
       }
     }
