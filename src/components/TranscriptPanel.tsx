@@ -8,7 +8,6 @@ import {
   isWebSpeechSupported,
   startTranscription,
 } from "@/lib/transcription"
-// formatDuration available if needed
 
 interface TranscriptPanelProps {
   rkey: string
@@ -31,7 +30,6 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
   const sessionRef = useRef<{ stop: () => void } | null>(null)
   const supported = isWebSpeechSupported()
 
-  // Check for cached transcript on mount
   useEffect(() => {
     const cached = getCachedTranscript(rkey)
     if (cached) {
@@ -41,7 +39,6 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
     }
   }, [rkey])
 
-  // Track video currentTime for highlight
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -54,7 +51,6 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
     return () => cancelAnimationFrame(raf)
   }, [videoRef])
 
-  // Auto-scroll to active segment
   useEffect(() => {
     if (!isOpen || segments.length === 0) return
     const activeIdx = segments.findIndex(
@@ -73,7 +69,6 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
     const video = videoRef.current
     if (!video) return
 
-    // Clear any existing session
     if (sessionRef.current) {
       sessionRef.current.stop()
     }
@@ -114,7 +109,6 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
     [videoRef]
   )
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (sessionRef.current) {
@@ -129,13 +123,12 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
 
   return (
     <div className="mt-4" role="region" aria-label="Transcript">
-      {/* Toggle / control bar */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
           aria-controls="transcript-content"
-          className="flex items-center gap-2 text-xs font-medium text-[#94a3b8] hover:text-white transition-colors"
+          className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors"
         >
           <svg
             className="w-4 h-4"
@@ -153,34 +146,34 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
           </svg>
           Transcript
           {segments.length > 0 && (
-            <span className="text-[#64748b]">
+            <span className="text-slate-500">
               ({segments.length} segment{segments.length !== 1 ? "s" : ""})
             </span>
           )}
           {hasCached && (
-            <span className="text-[#64748b] text-[10px]">cached</span>
+            <span className="text-slate-500 text-[10px]">cached</span>
           )}
         </button>
 
         {isOpen && !isActive && (
           <button
             onClick={handleStart}
-            className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium bg-[#1a2e1a] hover:bg-[#254525] text-[#7bde8c] rounded-full transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium bg-emerald-950 hover:bg-emerald-900 text-emerald-400 rounded-full transition-colors"
           >
-            <span className="w-2 h-2 rounded-full bg-[#7bde8c]" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             {segments.length > 0 ? "Re-transcribe" : "Start transcribing"}
           </button>
         )}
 
         {isActive && (
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-[11px] text-[#7bde8c]">
-              <span className="w-2 h-2 rounded-full bg-[#7bde8c] animate-pulse" />
+            <span className="flex items-center gap-1.5 text-[11px] text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               {status === "listening" ? "Listening..." : "Paused — play video to continue"}
             </span>
             <button
               onClick={handleStop}
-              className="px-2.5 py-1 text-[11px] font-medium bg-[#2e1a1a] hover:bg-[#452525] text-[#de7b7b] rounded-full transition-colors"
+              className="px-2.5 py-1 text-[11px] font-medium bg-red-950 hover:bg-red-900 text-red-400 rounded-full transition-colors"
             >
               Stop
             </button>
@@ -188,33 +181,32 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
         )}
 
         {status === "error" && (
-          <span className="text-[11px] text-[#de7b7b]">
+          <span className="text-[11px] text-red-400">
             Microphone access required — check browser permissions
           </span>
         )}
       </div>
 
-      {/* Transcript content */}
       {isOpen && (
         <div
           id="transcript-content"
           ref={scrollRef}
-          className="mt-3 max-h-64 overflow-y-auto scrollbar-hide bg-[#0f172a] rounded-lg border border-[#1e293b]"
+          className="mt-3 max-h-64 overflow-y-auto scrollbar-hide bg-slate-950 rounded-lg border border-slate-800"
           tabIndex={-1}
         >
           {segments.length === 0 ? (
             <div className="px-4 py-6 text-center">
-              <p className="text-xs text-[#64748b]">
+              <p className="text-xs text-slate-500">
                 {isActive
                   ? "Waiting for speech... Make sure the video is playing with audio."
                   : "Press \"Start transcribing\" then play the video. The browser will listen to the audio output and generate a transcript in real time."}
               </p>
-              <p className="text-[10px] text-[#64748b] mt-2">
+              <p className="text-[10px] text-slate-500 mt-2">
                 Transcripts are cached locally so you only need to generate them once.
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-[#1e293b]">
+            <div className="divide-y divide-slate-800">
               {segments.map((seg, i) => {
                 const isActive =
                   currentTime >= seg.start && currentTime < seg.end
@@ -224,16 +216,16 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
                     onClick={() => seekTo(seg.start)}
                     aria-label={`Jump to ${formatTimestamp(seg.start)}: ${seg.text}`}
                     aria-current={isActive ? "true" : undefined}
-                    className={`w-full text-left px-4 py-2.5 flex gap-3 hover:bg-[#111827] transition-colors ${
-                      isActive ? "bg-[#1e293b]" : ""
+                    className={`w-full text-left px-4 py-2.5 flex gap-3 hover:bg-slate-900 transition-colors ${
+                      isActive ? "bg-slate-800" : ""
                     }`}
                   >
-                    <span className="text-[11px] font-mono text-[#64748b] shrink-0 pt-0.5 w-10">
+                    <span className="text-[11px] font-mono text-slate-500 shrink-0 pt-0.5 w-10">
                       {formatTimestamp(seg.start)}
                     </span>
                     <span
                       className={`text-sm leading-relaxed ${
-                        isActive ? "text-white" : "text-[#94a3b8]"
+                        isActive ? "text-white" : "text-slate-400"
                       }`}
                     >
                       {seg.text}

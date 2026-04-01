@@ -42,7 +42,7 @@ export async function generateMetadata({
     const description = speaker
       ? `${video.title} by ${speaker} (${duration}) — ATmosphereConf 2026 replay on HUGHLOU.`
       : `${video.title} (${duration}) — ATmosphereConf 2026 replay on HUGHLOU.`
-    const url = `${SITE_URL}/events/atmosphereconf2026/watch/${rkey}`
+    const url = `${SITE_URL}/watch/${rkey}`
 
     return {
       title: `${video.title} — HUGHLOU`,

@@ -35,7 +35,7 @@ export default function WatchLaterQueue({ currentRkey }: WatchLaterQueueProps) {
         {queue.map((item) => (
           <div key={item.rkey} className="group relative">
             <Link
-              href={`/events/atmosphereconf2026/watch/${item.rkey}`}
+              href={`/watch/${item.rkey}`}
               className="block py-2.5 px-3 rounded-lg bg-slate-800/30 hover:bg-slate-700/40 border border-slate-700/30 hover:border-slate-600/40 transition-all duration-150"
             >
               <p className="text-[13px] text-slate-200 font-medium leading-snug line-clamp-2 pr-6">

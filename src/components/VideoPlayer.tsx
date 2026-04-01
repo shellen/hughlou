@@ -116,7 +116,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
     const showOverlay = state !== "playing"
 
     return (
-      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-[#111827]" role="region" aria-label={`Video player: ${title}`}>
+      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-slate-900" role="region" aria-label={`Video player: ${title}`}>
         <video
           ref={videoRef}
           controls={state === "playing"}
@@ -147,7 +147,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               >
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-all duration-200" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-2xl bg-[#2563eb] group-hover:bg-[#3b82f6] group-focus-visible:bg-[#3b82f6] flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-focus-visible:scale-105 shadow-2xl">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-focus-visible:scale-105 shadow-2xl">
                     <svg className="w-7 h-7 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M8 5v14l11-7z" />
                     </svg>
@@ -159,19 +159,19 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
             {/* Loading: spinner */}
             {state === "loading" && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40" role="status" aria-label="Loading video">
-                <div className="w-10 h-10 border-2 border-white/20 border-t-[#2563eb] rounded-full animate-spin" />
+                <div className="w-10 h-10 border-2 border-white/20 border-t-blue-600 rounded-full animate-spin" />
                 <span className="sr-only">Loading video…</span>
               </div>
             )}
 
             {/* Error */}
             {state === "error" && (
-              <div className="absolute inset-0 bg-[#111827] flex flex-col items-center justify-center gap-4" role="alert">
-                <p className="text-[#94a3b8] text-sm font-medium">This VOD isn&apos;t available yet</p>
-                <p className="text-[#64748b] text-xs">Still processing — check back soon</p>
+              <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center gap-4" role="alert">
+                <p className="text-slate-400 text-sm font-medium">This VOD isn&apos;t available yet</p>
+                <p className="text-slate-500 text-xs">Still processing — check back soon</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); setState("idle") }}
-                  className="mt-1 px-5 py-2 text-xs font-medium bg-[#1e293b] hover:bg-[#334155] text-white rounded-lg transition-colors"
+                  className="mt-1 px-5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
                 >
                   Retry
                 </button>

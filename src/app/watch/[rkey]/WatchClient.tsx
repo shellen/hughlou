@@ -47,7 +47,7 @@ function WatchSearch() {
 
   return createPortal(
     <form onSubmit={handleSubmit} className="relative w-full" role="search" aria-label="Search talks">
-      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
       <input
@@ -56,7 +56,7 @@ function WatchSearch() {
         aria-label="Search all talks"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full pl-10 pr-4 py-2 bg-[#111827] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#333] focus:ring-1 focus:ring-[#333] transition-all"
+        className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-700 focus:ring-1 focus:ring-slate-700 transition-all"
       />
     </form>,
     el
@@ -84,7 +84,6 @@ function ActionBar({
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
-  // Close overflow menu on outside click
   useEffect(() => {
     if (!moreOpen) return
     const handleClick = (e: MouseEvent) => {
@@ -112,14 +111,14 @@ function ActionBar({
   const messagesUrl = `sms:&body=${encodeURIComponent(`${videoTitle} — ${typeof window !== "undefined" ? window.location.href : ""}`)}`
 
   return (
-    <div className="mt-5 pt-5 border-t border-[#1e293b] flex flex-wrap items-center gap-2" role="group" aria-label="Talk actions">
+    <div className="mt-5 pt-5 border-t border-slate-800 flex flex-wrap items-center gap-2" role="group" aria-label="Talk actions">
       {/* Share on Bluesky */}
       <a
         href={shareUrl}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Share on Bluesky (opens in new tab)"
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-[#a0a0ff] bg-[#a0a0ff]/8 hover:bg-[#a0a0ff]/15 transition-colors"
+        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-indigo-300 bg-indigo-300/8 hover:bg-indigo-300/15 transition-colors"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 600 530" fill="currentColor" aria-hidden="true">
           <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
@@ -131,10 +130,10 @@ function ActionBar({
       <button
         onClick={handleCopy}
         aria-label={copied ? "Link copied" : "Copy link to clipboard"}
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-[#94a3b8] bg-[#94a3b8]/8 hover:bg-[#94a3b8]/15 transition-colors"
+        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
       >
         {copied ? (
-          <svg className="w-3.5 h-3.5 text-[#60d080]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         ) : (
@@ -149,7 +148,7 @@ function ActionBar({
       <a
         href={messagesUrl}
         aria-label="Share via Messages"
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-[#94a3b8] bg-[#94a3b8]/8 hover:bg-[#94a3b8]/15 transition-colors"
+        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -164,7 +163,7 @@ function ActionBar({
           target="_blank"
           rel="noopener noreferrer"
           aria-label="View on Streamplace (opens in new tab)"
-          className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-[#60d080] bg-[#60d080]/8 hover:bg-[#60d080]/15 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-emerald-400 bg-emerald-400/8 hover:bg-emerald-400/15 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -183,7 +182,7 @@ function ActionBar({
           aria-label="More actions"
           aria-expanded={moreOpen}
           aria-haspopup="menu"
-          className="inline-flex items-center justify-center w-8 h-8 rounded-md text-[#94a3b8] bg-[#94a3b8]/8 hover:bg-[#94a3b8]/15 transition-colors"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="5" r="1.5" />
@@ -194,7 +193,7 @@ function ActionBar({
         {moreOpen && (
           <div
             role="menu"
-            className="absolute left-0 bottom-full mb-2 w-52 bg-[#0f172a] border border-[#334155] rounded-lg shadow-xl py-1 z-50"
+            className="absolute left-0 bottom-full mb-2 w-52 bg-slate-950 border border-slate-700 rounded-lg shadow-xl py-1 z-50"
           >
             {postUrl && (
               <a
@@ -202,7 +201,7 @@ function ActionBar({
                 target="_blank"
                 rel="noopener noreferrer"
                 role="menuitem"
-                className="flex items-center gap-3 px-4 py-2.5 text-xs text-[#94a3b8] hover:text-white hover:bg-[#1e293b] transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 600 530" fill="currentColor" aria-hidden="true">
                   <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
@@ -215,7 +214,7 @@ function ActionBar({
               target="_blank"
               rel="noopener noreferrer"
               role="menuitem"
-              className="flex items-center gap-3 px-4 py-2.5 text-xs text-[#94a3b8] hover:text-white hover:bg-[#1e293b] transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
@@ -361,7 +360,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           <div>
-            <div className="aspect-video bg-[#111827] rounded-lg skeleton" />
+            <div className="aspect-video bg-slate-900 rounded-lg skeleton" />
             <div className="mt-6 space-y-3">
               <div className="h-7 w-3/4 skeleton rounded" />
               <div className="h-4 w-1/3 skeleton rounded" />
@@ -387,8 +386,8 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     return (
       <div className="max-w-[1400px] mx-auto px-6 py-16">
         <div className="text-center py-20">
-          <p className="text-[#94a3b8] text-base mb-6">{error || "Video not found"}</p>
-          <Link href="/events/atmosphereconf2026" className="inline-block px-6 py-2.5 bg-[#111827] border border-[#1e293b] hover:border-[#333] text-white text-sm font-medium rounded-lg transition-all">
+          <p className="text-slate-400 text-base mb-6">{error || "Video not found"}</p>
+          <Link href="/events/atmosphereconf2026" className="inline-block px-6 py-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-white text-sm font-medium rounded-lg transition-all">
             Back to All Talks
           </Link>
         </div>
@@ -409,6 +408,16 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8">
       <WatchSearch />
+
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="mb-5 text-xs text-slate-500 font-mono">
+        <ol className="flex items-center gap-1.5">
+          <li><Link href="/events/atmosphereconf2026" className="hover:text-white transition-colors">ATmosphereConf 2026</Link></li>
+          <li aria-hidden="true">/</li>
+          <li className="text-slate-400 truncate max-w-xs">{video.title}</li>
+        </ol>
+      </nav>
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 lg:gap-10">
         {/* Main content */}
         <div className="min-w-0">
@@ -417,7 +426,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
           {/* Prev / Next */}
           <nav aria-label="Talk navigation" className="mt-4 flex items-center justify-between">
             {prevVideo ? (
-              <Link href={`/events/atmosphereconf2026/watch/${extractRkey(prevVideo.uri)}`} aria-label={`Previous talk: ${prevVideo.title}`} className="group flex items-center gap-2 text-xs text-[#94a3b8] hover:text-white transition-colors">
+              <Link href={`/watch/${extractRkey(prevVideo.uri)}`} aria-label={`Previous talk: ${prevVideo.title}`} className="group flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -426,7 +435,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
               </Link>
             ) : <div />}
             {nextVideo ? (
-              <Link href={`/events/atmosphereconf2026/watch/${extractRkey(nextVideo.uri)}`} aria-label={`Next talk: ${nextVideo.title}`} className="group flex items-center gap-2 text-xs text-[#94a3b8] hover:text-white transition-colors text-right">
+              <Link href={`/watch/${extractRkey(nextVideo.uri)}`} aria-label={`Next talk: ${nextVideo.title}`} className="group flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors text-right">
                 <span className="hidden sm:inline max-w-[180px] truncate">{nextVideo.title}</span>
                 <span className="sm:hidden">Next</span>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden="true">
@@ -442,7 +451,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
               {video.title}
             </h1>
             {(speaker || speakerHandles.length > 0) && (
-              <p className="text-[#a0a0a8] text-sm mt-2">
+              <p className="text-slate-400 text-sm mt-2">
                 {speaker}
                 {speakerHandles.length > 0 && (
                   <>
@@ -450,7 +459,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
                     {speakerHandles.map((h, i) => (
                       <span key={h}>
                         {i > 0 && " · "}
-                        <a href={`https://bsky.app/profile/${h}`} target="_blank" rel="noopener noreferrer" className="text-[#a0a0ff] hover:text-white transition-colors">
+                        <a href={`https://bsky.app/profile/${h}`} target="_blank" rel="noopener noreferrer" className="text-indigo-300 hover:text-white transition-colors">
                           @{h}
                         </a>
                       </span>
@@ -462,17 +471,17 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
           </div>
 
           {/* Metadata */}
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#94a3b8] font-mono">
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 font-mono">
             <span>{formatDate(video.createdAt)}</span>
-            <span className="text-[#334155]">/</span>
+            <span className="text-slate-700">/</span>
             <span>{formatDuration(video.duration)}</span>
-            <span className="text-[#334155]">/</span>
+            <span className="text-slate-700">/</span>
             <span>{formatFileSize(video.source.size)}</span>
             {creatorHandle && (
               <>
-                <span className="text-[#334155]">/</span>
+                <span className="text-slate-700">/</span>
                 {profileUrl ? (
-                  <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-[#a0a0ff] hover:text-white transition-colors">
+                  <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-300 hover:text-white transition-colors">
                     @{creatorHandle}
                   </a>
                 ) : (
@@ -499,7 +508,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
           {/* Bluesky Comments */}
           <BlueskyComments
             postUri={livestream?.post?.uri || null}
-            videoPageUrl={`https://hughlou.com/events/atmosphereconf2026/watch/${rkey}`}
+            videoPageUrl={`https://hughlou.com/watch/${rkey}`}
             shareUrl={shareUrl}
             streamplaceUrl={streamplaceUrl}
           />
@@ -510,16 +519,16 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
           <WatchLaterQueue currentRkey={rkey} />
 
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xs font-semibold text-[#94a3b8] uppercase tracking-widest">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
               More Talks
             </h2>
-            <Link href="/events/atmosphereconf2026" className="text-xs text-[#a0a0ff] hover:text-white transition-colors font-medium">
+            <Link href="/events/atmosphereconf2026" className="text-xs text-indigo-300 hover:text-white transition-colors font-medium">
               All Talks &rarr;
             </Link>
           </div>
           <div className="space-y-1">
             {otherVideos.length === 0 ? (
-              <p className="text-[#94a3b8] text-sm">No other videos available</p>
+              <p className="text-slate-400 text-sm">No other videos available</p>
             ) : (
               otherVideos.map((v) => {
                 const rk = extractRkey(v.uri)
@@ -540,8 +549,8 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
             )}
           </div>
           {otherVideos.length > 0 && (
-            <div className="mt-6 pt-4 border-t border-[#1e293b]">
-              <Link href="/events/atmosphereconf2026" className="block text-center text-xs text-[#94a3b8] hover:text-white transition-colors font-medium py-2">
+            <div className="mt-6 pt-4 border-t border-slate-800">
+              <Link href="/events/atmosphereconf2026" className="block text-center text-xs text-slate-400 hover:text-white transition-colors font-medium py-2">
                 View all {allVideos.length} talks
               </Link>
             </div>

@@ -2,13 +2,8 @@
 
 :root {
   --bg: #0a0f1a;
-  --surface: #111827;
-  --border: #1e293b;
-  --muted: #94a3b8;
   --text: #e2e8f0;
   --accent: #2563eb;
-  --accent-hover: #3b82f6;
-  --link: #a0a0ff;
 }
 
 /* Skip to content link */

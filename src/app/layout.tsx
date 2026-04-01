@@ -54,7 +54,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
-        <header className="sticky top-0 z-50 bg-[#0a0f1a]/90 backdrop-blur-md border-b border-[#1e293b]">
+        <header className="sticky top-0 z-50 bg-[--bg]/90 backdrop-blur-md border-b border-slate-800">
           <nav
             aria-label="Main navigation"
             className="max-w-[1400px] mx-auto px-6 h-16 flex items-center gap-6"
@@ -65,7 +65,7 @@ export default function RootLayout({
               aria-label="HUGHLOU — Home"
             >
               <div
-                className="w-8 h-8 bg-[#2563eb] rounded-lg flex items-center justify-center"
+                className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"
                 aria-hidden="true"
               >
                 <span className="text-white font-black text-[11px] leading-none tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -73,7 +73,7 @@ export default function RootLayout({
                 </span>
               </div>
               <span className="text-[15px] font-black text-white tracking-wide uppercase hidden sm:block" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                HUGH<span className="text-[#2563eb]">LOU</span>
+                HUGH<span className="text-blue-600">LOU</span>
               </span>
             </a>
             <div id="header-search" className="flex-1 max-w-md" role="search" />
@@ -82,26 +82,22 @@ export default function RootLayout({
         <main id="main-content" className="min-h-screen">
           {children}
         </main>
-        <footer className="border-t border-[#1e293b] py-8 mt-16">
-          <div className="max-w-[1400px] mx-auto px-6 flex flex-col items-center gap-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
-              <p className="text-xs text-[#94a3b8] tracking-wide">
-                ATmosphereConf 2026 &middot; Vancouver, BC &middot; March 28–30
-              </p>
-              <div className="flex items-center gap-4 text-xs text-[#94a3b8]">
-                <span>
-                  A{" "}
-                  <a
-                    href="https://bsky.app/profile/shellen.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#a0a0ff] hover:text-white transition-colors"
-                  >
-                    @shellen.com
-                  </a>{" "}
-                  project
-                </span>
-                <span className="text-[#1e293b]">|</span>
+        <footer className="border-t border-slate-800 py-10 mt-16">
+          <div className="max-w-[1400px] mx-auto px-6 flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <span className="text-xs text-slate-400">
+                A{" "}
+                <a
+                  href="https://bsky.app/profile/shellen.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-300 hover:text-white transition-colors"
+                >
+                  @shellen.com
+                </a>{" "}
+                project
+              </span>
+              <div className="flex items-center gap-6 text-xs text-slate-400">
                 <a
                   href="https://stream.place"
                   target="_blank"
@@ -110,7 +106,6 @@ export default function RootLayout({
                 >
                   Powered by Streamplace
                 </a>
-                <span className="text-[#1e293b]">|</span>
                 <a
                   href="https://github.com/shellen/hughlou"
                   target="_blank"
@@ -121,11 +116,16 @@ export default function RootLayout({
                 </a>
               </div>
             </div>
-            <p className="text-[10px] text-[#475569] text-center max-w-lg">
-              HughLou is an independent, open-source project and is in no way affiliated with, endorsed by, or associated with{" "}
-              <a href="https://stream.place" target="_blank" rel="noopener noreferrer" className="hover:text-[#94a3b8] transition-colors">Stream.place</a> or{" "}
-              <a href="https://atmosphere.wtf" target="_blank" rel="noopener noreferrer" className="hover:text-[#94a3b8] transition-colors">ATmosphere Conf</a>.
-            </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <p className="text-[10px] text-slate-600 max-w-lg">
+                HughLou is an independent, open-source project and is in no way affiliated with, endorsed by, or associated with{" "}
+                <a href="https://stream.place" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors">Stream.place</a> or{" "}
+                <a href="https://atmosphere.wtf" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors">ATmosphere Conf</a>.
+              </p>
+              <p className="text-[10px] text-slate-600 shrink-0">
+                No copyright is claimed over linked or embedded content.
+              </p>
+            </div>
           </div>
         </footer>
       </body>

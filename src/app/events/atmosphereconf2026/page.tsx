@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useMemo, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { createPortal } from "react-dom"
+import Link from "next/link"
 import VideoCard from "@/components/VideoCard"
 import { listVideos, getVideoHlsUrl, extractRkey, fetchLivestreamRecord, parseSpeaker, resolveHandle, VideoRecord } from "@/lib/api"
 import { getCachedThumb, captureThumbsBatch } from "@/lib/thumbnails"
@@ -30,7 +31,7 @@ function HeaderSearch({ search, setSearch }: { search: string; setSearch: (s: st
 
   return createPortal(
     <div className="relative w-full" role="search" aria-label="Search talks">
-      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
       <input
@@ -39,13 +40,13 @@ function HeaderSearch({ search, setSearch }: { search: string; setSearch: (s: st
         aria-label="Search talks, speakers, and handles"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full pl-10 pr-10 py-2 bg-[#111827] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#333] focus:ring-1 focus:ring-[#333] transition-all"
+        className="w-full pl-10 pr-10 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-700 focus:ring-1 focus:ring-slate-700 transition-all"
       />
       {search && (
         <button
           onClick={() => setSearch("")}
           aria-label="Clear search"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-white transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
@@ -189,9 +190,9 @@ function Home() {
 
       {/* Hero — ATmosphere Conf style */}
       <div className="mb-14">
-        <div className="rounded-2xl overflow-hidden mb-8">
+        <Link href="/events/atmosphereconf2026" className="block rounded-2xl overflow-hidden mb-8">
           {/* Conference banner */}
-          <div className="bg-[#111827] px-6 sm:px-10 pt-8 pb-4">
+          <div className="bg-slate-900 px-6 sm:px-10 pt-8 pb-4">
             <p
               className="text-[clamp(2.5rem,8vw,5.5rem)] font-black text-white uppercase leading-[0.9] tracking-tight"
               style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -201,7 +202,7 @@ function Home() {
             </p>
           </div>
           <div className="flex items-stretch">
-            <div className="bg-[#111827] pl-6 sm:pl-10 pr-2 sm:pr-3 flex items-center pb-6 pt-0">
+            <div className="bg-slate-900 pl-6 sm:pl-10 pr-2 sm:pr-3 flex items-center pb-6 pt-0">
               <p
                 className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -210,7 +211,7 @@ function Home() {
                 CONF
               </p>
             </div>
-            <div className="bg-[#2563eb] pl-3 sm:pl-4 pr-4 sm:pr-6 flex items-center flex-1 rounded-tl-2xl pb-6 pt-0">
+            <div className="bg-blue-600 pl-3 sm:pl-4 pr-4 sm:pr-6 flex items-center flex-1 rounded-tl-2xl pb-6 pt-0">
               <p
                 className="text-[clamp(1.75rem,5.5vw,3.5rem)] font-black text-white uppercase leading-none tracking-tight"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -219,24 +220,24 @@ function Home() {
               </p>
             </div>
           </div>
-        </div>
+        </Link>
 
         <h1 className="sr-only">HUGHLOU — ATmosphereConf 2026 Replay</h1>
-        <p className="text-base text-[#94a3b8] leading-relaxed max-w-2xl mb-1">
+        <p className="text-base text-slate-400 leading-relaxed max-w-2xl mb-1">
           Every talk from ATmosphereConf 2026, on demand.
         </p>
-        <p className="text-sm text-[#64748b] leading-relaxed max-w-2xl">
-          Three days of workshops, demos, and deep dives — from Vancouver, BC.
+        <p className="text-sm text-slate-500 leading-relaxed max-w-2xl">
+          Three days of workshops, demos, and deep dives — from Vancouver, BC. March 28–30, 2026.
         </p>
         {videos.length > 0 && (
-          <p className="text-sm text-[#475569] mt-3 font-mono">
-            {videos.length}&nbsp;talks &middot; 3 days &middot; March 28&ndash;30
+          <p className="text-sm text-slate-600 mt-3 font-mono">
+            {videos.length}&nbsp;talks &middot; 3 days
           </p>
         )}
       </div>
 
       {search && (
-        <p className="text-xs text-[#94a3b8] mb-6 font-mono" role="status" aria-live="polite" aria-atomic="true">
+        <p className="text-xs text-slate-400 mb-6 font-mono" role="status" aria-live="polite" aria-atomic="true">
           {filteredVideos.length} result{filteredVideos.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
         </p>
       )}
@@ -259,7 +260,7 @@ function Home() {
         </div>
       ) : filteredVideos.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-[#94a3b8] text-base">{search ? "No talks match your search." : "No videos found."}</p>
+          <p className="text-slate-400 text-base">{search ? "No talks match your search." : "No videos found."}</p>
         </div>
       ) : (
         <div className="space-y-16">
@@ -270,7 +271,7 @@ function Home() {
                 <div className="flex items-baseline gap-4 mb-8">
                   <h2 className="text-lg font-bold text-white tracking-tight">{label}</h2>
                   {sub && (
-                    <span className="text-xs text-[#64748b] font-mono">
+                    <span className="text-xs text-slate-500 font-mono">
                       {sub} &middot; {dayVideos.length} talk{dayVideos.length !== 1 ? "s" : ""}
                     </span>
                   )}
@@ -299,7 +300,7 @@ function Home() {
               <button
                 onClick={loadMore}
                 disabled={loading}
-                className="px-8 py-3 bg-[#111827] border border-[#1e293b] hover:border-[#333] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all"
+                className="px-8 py-3 bg-slate-900 border border-slate-800 hover:border-slate-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all"
               >
                 {loading ? "Loading..." : "Load More Talks"}
               </button>
