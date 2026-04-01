@@ -40,7 +40,7 @@ function titleToGradient(title: string) {
 }
 
 const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
-  function VideoPlayer({ hlsUrl, title, poster: _poster, thumbDataUrl }, ref) {
+  function VideoPlayer({ hlsUrl, title, poster, thumbDataUrl }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const hlsRef = useRef<Hls | null>(null)
     const [state, setState] = useState<PlayerState>("idle")
@@ -128,8 +128,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         {showOverlay && (
           <div className="absolute inset-0">
             {/* Background */}
-            {thumbDataUrl ? (
-              <img src={thumbDataUrl} alt={`Thumbnail for ${title}`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+            {(thumbDataUrl || poster) ? (
+              <img src={(thumbDataUrl || poster)!} alt={`Thumbnail for ${title}`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
             ) : (
               <div className="absolute inset-0 flex items-end p-8" style={{ backgroundColor: gradientStyle.bg }}>
                 <p className="text-base font-medium leading-snug line-clamp-3 opacity-40" aria-hidden="true" style={{ color: gradientStyle.accent }}>

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import VideoCard from "@/components/VideoCard"
-import { listVideos, getVideoHlsUrl, extractRkey, fetchLivestreamRecord, parseSpeaker, resolveHandle, VideoRecord } from "@/lib/api"
+import { listVideos, getVideoHlsUrl, extractRkey, extractDid, fetchLivestreamRecord, parseSpeaker, resolveHandle, resolvePds, getLivestreamThumbUrl, VideoRecord } from "@/lib/api"
 import { getCachedThumb, captureThumbsBatch } from "@/lib/thumbnails"
 
 const DAY_LABELS: Record<string, { label: string; sub: string }> = {
@@ -74,7 +74,7 @@ function Home() {
   const searchParams = useSearchParams()
   const [search, setSearch] = useState(searchParams.get("q") || "")
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
-  const [speakerInfo, setSpeakerInfo] = useState<Record<string, { speaker: string; handles: string[]; creatorHandle: string }>>({})
+  const [speakerInfo, setSpeakerInfo] = useState<Record<string, { speaker: string; handles: string[]; creatorHandle: string; thumbUrl?: string }>>({})
 
   const onThumbCapture = useCallback((rkey: string, dataUrl: string) => {
     setThumbs((prev) => ({ ...prev, [rkey]: dataUrl }))
@@ -103,7 +103,7 @@ function Home() {
     if (videos.length === 0) return
     let cancelled = false
     async function enrichSpeakers() {
-      const infos: Record<string, { speaker: string; handles: string[]; creatorHandle: string }> = {}
+      const infos: Record<string, { speaker: string; handles: string[]; creatorHandle: string; thumbUrl?: string }> = {}
       await Promise.allSettled(
         videos.map(async (v) => {
           const rk = extractRkey(v.uri)
@@ -111,15 +111,21 @@ function Home() {
             const creatorHandle = await resolveHandle(v.creator)
             let speaker = ""
             let handles: string[] = []
+            let thumbUrl: string | undefined
             if (v.livestream?.uri) {
               const ls = await fetchLivestreamRecord(v.livestream.uri)
               if (ls) {
                 const parsed = parseSpeaker(ls.title)
                 speaker = parsed.speaker
                 handles = parsed.handles
+                if (ls.thumb?.ref?.$link) {
+                  const creatorDid = extractDid(v.livestream.uri)
+                  const pds = await resolvePds(creatorDid)
+                  if (pds) thumbUrl = getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds)
+                }
               }
             }
-            infos[rk] = { speaker, handles, creatorHandle }
+            infos[rk] = { speaker, handles, creatorHandle, thumbUrl }
           } catch { /* skip */ }
         })
       )
@@ -286,7 +292,7 @@ function Home() {
                         duration={video.duration}
                         createdAt={video.createdAt}
                         uri={video.uri}
-                        thumbDataUrl={thumbs[rkey]}
+                        thumbDataUrl={thumbs[rkey] || speakerInfo[rkey]?.thumbUrl}
                       />
                     )
                   })}
