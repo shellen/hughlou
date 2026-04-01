@@ -59,7 +59,6 @@ export async function captureThumb(
 
   return new Promise((resolve) => {
     const video = document.createElement("video")
-    video.crossOrigin = "anonymous"
     video.muted = true
     video.playsInline = true
     video.preload = "auto"
