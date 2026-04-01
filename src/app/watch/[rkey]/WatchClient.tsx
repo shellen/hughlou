@@ -163,7 +163,7 @@ function ActionBar({
           target="_blank"
           rel="noopener noreferrer"
           aria-label="View on Streamplace (opens in new tab)"
-          className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-emerald-400 bg-emerald-400/8 hover:bg-emerald-400/15 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -201,7 +201,7 @@ function ActionBar({
                 target="_blank"
                 rel="noopener noreferrer"
                 role="menuitem"
-                className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="flex items-center gap-3 px-4 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 600 530" fill="currentColor" aria-hidden="true">
                   <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
@@ -214,7 +214,7 @@ function ActionBar({
               target="_blank"
               rel="noopener noreferrer"
               role="menuitem"
-              className="flex items-center gap-3 px-4 py-2.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-3 px-4 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
@@ -419,7 +419,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
 
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-5 text-xs text-slate-500 font-mono">
-        <ol className="flex items-center gap-1.5">
+        <ol className="flex items-center gap-2">
           <li><Link href="/events/atmosphereconf2026" className="hover:text-white transition-colors">ATmosphereConf 2026</Link></li>
           <li aria-hidden="true">/</li>
           <li className="text-slate-400 truncate max-w-xs">{video.title}</li>

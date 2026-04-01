@@ -253,7 +253,7 @@ function Home() {
           <span className="sr-only">Loading talks…</span>
           <div>
             <div className="h-6 w-64 skeleton rounded mb-8" aria-hidden="true" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-10" aria-hidden="true">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8" aria-hidden="true">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="space-y-3">
                   <div className="aspect-video rounded-lg skeleton" />
@@ -282,7 +282,7 @@ function Home() {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8">
                   {dayVideos.map((video) => {
                     const rkey = extractRkey(video.uri)
                     return (

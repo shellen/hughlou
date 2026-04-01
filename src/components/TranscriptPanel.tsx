@@ -158,7 +158,7 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
         {isOpen && !isActive && (
           <button
             onClick={handleStart}
-            className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium bg-emerald-950 hover:bg-emerald-900 text-emerald-400 rounded-full transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-[11px] font-medium bg-emerald-950 hover:bg-emerald-900 text-emerald-400 rounded-full transition-colors"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             {segments.length > 0 ? "Re-transcribe" : "Start transcribing"}
@@ -167,7 +167,7 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
 
         {isActive && (
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-[11px] text-emerald-400">
+            <span className="flex items-center gap-2 text-[11px] text-emerald-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               {status === "listening" ? "Listening..." : "Paused — play video to continue"}
             </span>
