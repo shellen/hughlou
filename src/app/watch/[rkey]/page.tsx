@@ -8,6 +8,8 @@ import VideoPlayer from "@/components/VideoPlayer"
 import VideoCard from "@/components/VideoCard"
 import TranscriptPanel from "@/components/TranscriptPanel"
 import BlueskyComments from "@/components/BlueskyComments"
+import WatchLaterButton from "@/components/WatchLaterButton"
+import WatchLaterQueue from "@/components/WatchLaterQueue"
 import {
   listVideos,
   getVideoHlsUrl,
@@ -67,12 +69,16 @@ function ActionBar({
   streamplaceUrl,
   atRecordUrl,
   videoTitle,
+  videoRkey,
+  videoDuration,
 }: {
   shareUrl: string
   postUrl: string | null
   streamplaceUrl: string | null
   atRecordUrl: string
   videoTitle: string
+  videoRkey: string
+  videoDuration: number
 }) {
   const [copied, setCopied] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -166,6 +172,9 @@ function ActionBar({
           Streamplace
         </a>
       )}
+
+      {/* Watch Later */}
+      <WatchLaterButton rkey={videoRkey} title={videoTitle} duration={videoDuration} />
 
       {/* More (...) overflow menu */}
       <div className="relative" ref={moreRef}>
@@ -450,6 +459,8 @@ export default function WatchPage({ params: paramsPromise }: PageProps) {
             streamplaceUrl={streamplaceUrl}
             atRecordUrl={`https://pds.ls/${video.uri}`}
             videoTitle={video.title}
+            videoRkey={rkey}
+            videoDuration={video.duration}
           />
 
           {/* Transcript */}
@@ -466,6 +477,8 @@ export default function WatchPage({ params: paramsPromise }: PageProps) {
 
         {/* Sidebar */}
         <aside aria-label="More talks" className="lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto scrollbar-hide">
+          <WatchLaterQueue currentRkey={rkey} />
+
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xs font-semibold text-[#8b8b96] uppercase tracking-widest">
               More Talks
