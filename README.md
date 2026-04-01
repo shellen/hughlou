@@ -68,6 +68,8 @@ How it works:
 
 This also fixes thumbnail generation: since video requests are now same-origin, canvas frame capture (used for async thumbnails) no longer triggers cross-origin tainting. As a fallback, thumbnails are also resolved from blob references stored in the livestream records via `com.atproto.sync.getBlob`.
 
+**Note:** Streamplace VOD is in beta. The VOD endpoint URL, XRPC method names, and response formats may change as encoding and infrastructure evolve on the stream.place side. If video playback breaks after an upstream change, check `VOD_HOST` in `src/app/api/vod/[...method]/route.ts` and the XRPC method whitelist. Video AT URIs (`at://` identifiers) are stable — only the playback delivery layer is subject to change.
+
 ## Getting Started
 
 ```bash
