@@ -48,6 +48,8 @@ function Thumbnail({ title, thumbDataUrl }: { title: string; thumbDataUrl?: stri
         src={thumbDataUrl}
         alt=""
         role="presentation"
+        width={320}
+        height={180}
         className="w-full h-full object-cover"
         loading="lazy"
         decoding="async"
