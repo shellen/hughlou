@@ -135,7 +135,6 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
           ref={videoRef}
           controls={state === "playing"}
           playsInline
-          crossOrigin="anonymous"
           className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}
           aria-label={title}
         />
