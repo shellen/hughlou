@@ -49,15 +49,12 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
     const gradientStyle = titleToGradient(title)
 
-    // Cleanup HLS on unmount or URL change
     useEffect(() => {
       return () => {
         if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
       }
     }, [hlsUrl])
 
-    // Load HLS only when user clicks play — avoids downloading manifest + segments
-    // on page load, which tanks Lighthouse performance score.
     const handlePlay = async () => {
       const video = videoRef.current
       if (!video || !hlsUrl) return
@@ -66,11 +63,27 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
       setState("loading")
 
-      // Dynamic import — keeps hls.js out of the initial page bundle
+      // Pre-flight: check if the VOD endpoint is reachable before loading HLS.
+      // This gives fast feedback (~3s) instead of waiting for HLS.js internal
+      // retries to exhaust (which can take 20-30s).
+      try {
+        const probe = await fetch(hlsUrl, { method: "HEAD", signal: AbortSignal.timeout(6000) })
+        if (!probe.ok) {
+          setState("upstream-down")
+          return
+        }
+      } catch {
+        setState("upstream-down")
+        return
+      }
+
       const { default: Hls } = await import("hls.js")
 
       if (Hls.isSupported()) {
-        const hls = new Hls()
+        const hls = new Hls({
+          manifestLoadingTimeOut: 8000,
+          manifestLoadingMaxRetry: 1,
+        })
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)
@@ -84,16 +97,10 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
             }
           })
         })
-        let networkRetries = 0
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              networkRetries++
-              if (networkRetries <= 2) {
-                hls.startLoad()
-              } else {
-                setState("upstream-down")
-              }
+              setState("upstream-down")
             } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
               hls.recoverMediaError()
             } else {
@@ -101,17 +108,12 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
             }
           }
         })
-        // Timeout: if no segments load within 12s, likely upstream issue
-        let hasSegments = false
-        hls.on(Hls.Events.FRAG_LOADED, () => { hasSegments = true })
-        setTimeout(() => { if (!hasSegments) setState((cur) => cur === "loading" ? "upstream-down" : cur) }, 12000)
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS
         video.src = hlsUrl
         video.addEventListener("loadedmetadata", () => {
           video.play().then(() => setState("playing")).catch(() => setState("playing"))
         }, { once: true })
-        video.addEventListener("error", () => setState("error"), { once: true })
+        video.addEventListener("error", () => setState("upstream-down"), { once: true })
       }
     }
 
@@ -129,7 +131,6 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
         {showOverlay && (
           <div className="absolute inset-0">
-            {/* Background: thumbnail or gradient */}
             {(thumbDataUrl || poster) ? (
               <img src={(thumbDataUrl || poster)!} alt="" className="absolute inset-0 w-full h-full object-cover" draggable={false} aria-hidden="true" />
             ) : (
@@ -140,16 +141,15 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Idle: play button */}
             {state === "idle" && (
               <button
                 onClick={handlePlay}
                 aria-label={`Play ${title}`}
                 className="absolute inset-0 w-full h-full cursor-pointer group bg-transparent border-0"
               >
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-all duration-200" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-colors duration-150" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-2xl bg-[#2563eb] group-hover:bg-[#3b82f6] group-focus-visible:bg-[#3b82f6] flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-focus-visible:scale-105 shadow-2xl">
+                  <div className="w-16 h-16 rounded-2xl bg-[#2563eb] group-hover:bg-[#3b82f6] group-focus-visible:bg-[#3b82f6] flex items-center justify-center transition-colors duration-150 shadow-2xl">
                     <svg className="w-7 h-7 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M8 5v14l11-7z" />
                     </svg>
@@ -158,7 +158,6 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </button>
             )}
 
-            {/* Loading: spinner */}
             {state === "loading" && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40" role="status" aria-label="Loading video">
                 <div className="w-10 h-10 border-2 border-white/20 border-t-[#2563eb] rounded-full animate-spin" />
@@ -166,7 +165,6 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Upstream down — stream.place not responding */}
             {state === "upstream-down" && (
               <div className="absolute inset-0 bg-[#111113] flex flex-col items-center justify-center gap-5 px-6" role="alert">
                 <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
@@ -175,13 +173,13 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
                   </svg>
                 </div>
                 <div className="text-center">
-                  <p className="text-[#8b8b96] text-sm font-medium">Stream.place is experiencing issues</p>
-                  <p className="text-[#71717a] text-xs mt-1.5">The VOD service is temporarily unavailable — this usually resolves on its own</p>
+                  <p className="text-[#94949e] text-sm font-medium">Stream.place is experiencing issues</p>
+                  <p className="text-[#62626a] text-xs mt-1.5 leading-relaxed">The VOD service is temporarily unavailable.<br />This usually resolves on its own.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={(e) => { e.stopPropagation(); setState("idle") }}
-                    className="px-5 py-2 text-xs font-medium bg-[#1c1c1f] hover:bg-[#2a2a2e] text-white rounded-lg transition-colors"
+                    className="px-5 py-2 text-xs font-medium bg-[#1c1c1f] hover:bg-[#2a2a2e] text-white rounded-lg transition-colors duration-150"
                   >
                     Retry
                   </button>
@@ -189,7 +187,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
                     href="https://stream.place"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-5 py-2 text-xs font-medium text-[#71717a] hover:text-white transition-colors"
+                    className="px-5 py-2 text-xs font-medium text-[#62626a] hover:text-white transition-colors duration-150"
                   >
                     Check status
                   </a>
@@ -197,14 +195,13 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Error — VOD not processed yet */}
             {state === "error" && (
-              <div className="absolute inset-0 bg-[#111113] flex flex-col items-center justify-center gap-4" role="alert">
-                <p className="text-[#8b8b96] text-sm font-medium">This VOD isn&apos;t available yet</p>
-                <p className="text-[#71717a] text-xs">Still processing — check back soon</p>
+              <div className="absolute inset-0 bg-[#111113] flex flex-col items-center justify-center gap-4 px-6" role="alert">
+                <p className="text-[#94949e] text-sm font-medium">This VOD isn&apos;t available yet</p>
+                <p className="text-[#62626a] text-xs">Still processing — check back soon</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); setState("idle") }}
-                  className="mt-1 px-5 py-2 text-xs font-medium bg-[#1c1c1f] hover:bg-[#2a2a2e] text-white rounded-lg transition-colors"
+                  className="mt-1 px-5 py-2 text-xs font-medium bg-[#1c1c1f] hover:bg-[#2a2a2e] text-white rounded-lg transition-colors duration-150"
                 >
                   Retry
                 </button>
