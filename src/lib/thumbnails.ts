@@ -61,6 +61,7 @@ export async function captureThumb(
     const video = document.createElement("video")
     video.muted = true
     video.playsInline = true
+    video.crossOrigin = "anonymous"
     video.preload = "auto"
     video.style.position = "fixed"
     video.style.top = "-9999px"

@@ -56,6 +56,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
       const video = videoRef.current
       if (!video || !hlsUrl) return
 
+      setState("idle")
+
       if (Hls.isSupported()) {
         const hls = new Hls({
           debug: false,
@@ -95,7 +97,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
       }
     }, [hlsUrl])
 
-    // User clicks play — video.play() fires synchronously in the click gesture
+    // User clicks play — video.play() fires synchronously in the click gesture.
+    // Only callable when state === "ready" (manifest parsed, media attached).
     const handlePlay = () => {
       const video = videoRef.current
       if (!video) return
@@ -106,15 +109,20 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         setState("playing")
       }).catch((err) => {
         if (err.name === "NotAllowedError") {
-          // Browser blocked unmuted autoplay — mute and retry
+          // Browser blocked unmuted autoplay — mute and retry (stream.place pattern)
           video.muted = true
           video.play().then(() => {
             setState("playing")
           }).catch(() => {
+            // Even muted play failed — show native controls as last resort
             setState("playing")
           })
+        } else if (err.name === "AbortError") {
+          // play() interrupted (e.g. by a new load) — not a real error, let user retry
+          setState("ready")
         } else {
-          setState("playing")
+          // Genuine playback failure
+          setState("error")
         }
       })
     }
@@ -127,6 +135,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
           ref={videoRef}
           controls={state === "playing"}
           playsInline
+          crossOrigin="anonymous"
           className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}
           aria-label={title}
         />
@@ -144,8 +153,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Idle / Ready: play button */}
-            {(state === "idle" || state === "ready") && (
+            {/* Ready: play button (manifest parsed, safe to call play()) */}
+            {state === "ready" && (
               <button
                 onClick={handlePlay}
                 aria-label={`Play ${title}`}
@@ -162,8 +171,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </button>
             )}
 
-            {/* Loading: spinner */}
-            {state === "loading" && (
+            {/* Idle (manifest loading) or Loading (play() in progress): spinner */}
+            {(state === "idle" || state === "loading") && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40" role="status" aria-label="Loading video">
                 <div className="w-10 h-10 border-2 border-white/20 border-t-blue-600 rounded-full animate-spin" />
                 <span className="sr-only">Loading video…</span>
