@@ -10,7 +10,7 @@ interface VideoPlayerProps {
   thumbDataUrl?: string | null
 }
 
-type PlayerState = "idle" | "loading" | "playing" | "error"
+type PlayerState = "idle" | "loading" | "playing" | "error" | "upstream-down"
 
 function titleToGradient(title: string) {
   let hash = 0
@@ -84,17 +84,27 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
             }
           })
         })
+        let networkRetries = 0
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad()
-            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError()
-            else setState("error")
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              networkRetries++
+              if (networkRetries <= 2) {
+                hls.startLoad()
+              } else {
+                setState("upstream-down")
+              }
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+              hls.recoverMediaError()
+            } else {
+              setState("error")
+            }
           }
         })
-        // Timeout: if no segments load within 12s, show error
+        // Timeout: if no segments load within 12s, likely upstream issue
         let hasSegments = false
         hls.on(Hls.Events.FRAG_LOADED, () => { hasSegments = true })
-        setTimeout(() => { if (!hasSegments) setState((cur) => cur === "loading" ? "error" : cur) }, 12000)
+        setTimeout(() => { if (!hasSegments) setState((cur) => cur === "loading" ? "upstream-down" : cur) }, 12000)
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Safari native HLS
         video.src = hlsUrl
@@ -156,7 +166,38 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               </div>
             )}
 
-            {/* Error */}
+            {/* Upstream down — stream.place not responding */}
+            {state === "upstream-down" && (
+              <div className="absolute inset-0 bg-[#111113] flex flex-col items-center justify-center gap-5 px-6" role="alert">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <p className="text-[#8b8b96] text-sm font-medium">Stream.place is experiencing issues</p>
+                  <p className="text-[#71717a] text-xs mt-1.5">The VOD service is temporarily unavailable — this usually resolves on its own</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setState("idle") }}
+                    className="px-5 py-2 text-xs font-medium bg-[#1c1c1f] hover:bg-[#2a2a2e] text-white rounded-lg transition-colors"
+                  >
+                    Retry
+                  </button>
+                  <a
+                    href="https://stream.place"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 py-2 text-xs font-medium text-[#71717a] hover:text-white transition-colors"
+                  >
+                    Check status
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Error — VOD not processed yet */}
             {state === "error" && (
               <div className="absolute inset-0 bg-[#111113] flex flex-col items-center justify-center gap-4" role="alert">
                 <p className="text-[#8b8b96] text-sm font-medium">This VOD isn&apos;t available yet</p>
