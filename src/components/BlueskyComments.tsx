@@ -42,12 +42,12 @@ function CommentCard({ comment }: { comment: Comment }) {
           <img
             src={comment.author.avatar}
             alt=""
-            className="w-9 h-9 rounded-full bg-[#1c1c1f]"
+            className="w-9 h-9 rounded-full bg-[#1e293b]"
             loading="lazy"
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-[#1c1c1f] flex items-center justify-center">
-            <span className="text-xs text-[#8b8b96] font-medium">
+          <div className="w-9 h-9 rounded-full bg-[#1e293b] flex items-center justify-center">
+            <span className="text-xs text-[#94a3b8] font-medium">
               {(comment.author.displayName || comment.author.handle).charAt(0).toUpperCase()}
             </span>
           </div>
@@ -69,29 +69,29 @@ function CommentCard({ comment }: { comment: Comment }) {
             href={`https://bsky.app/profile/${comment.author.handle}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-[#71717a] hover:text-[#a0a0ff] transition-colors truncate max-w-[160px]"
+            className="text-[11px] text-[#64748b] hover:text-[#a0a0ff] transition-colors truncate max-w-[160px]"
           >
             @{comment.author.handle}
           </a>
-          <span className="text-[11px] text-[#52525b]">·</span>
+          <span className="text-[11px] text-[#475569]">·</span>
           <a
             href={comment.postUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-[#52525b] hover:text-[#8b8b96] transition-colors"
+            className="text-[11px] text-[#475569] hover:text-[#94a3b8] transition-colors"
           >
             {timeAgo(comment.createdAt)}
           </a>
         </div>
 
-        <p className="text-[13px] text-[#d4d4d8] leading-relaxed mt-1 whitespace-pre-wrap break-words">
+        <p className="text-[13px] text-[#cbd5e1] leading-relaxed mt-1 whitespace-pre-wrap break-words">
           {comment.text}
         </p>
 
         {/* Engagement */}
         <div className="flex items-center gap-4 mt-2">
           {comment.likeCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-[#52525b]">
+            <span className="flex items-center gap-1 text-[11px] text-[#475569]">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
               </svg>
@@ -99,7 +99,7 @@ function CommentCard({ comment }: { comment: Comment }) {
             </span>
           )}
           {comment.replyCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-[#52525b]">
+            <span className="flex items-center gap-1 text-[11px] text-[#475569]">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
               </svg>
@@ -110,7 +110,7 @@ function CommentCard({ comment }: { comment: Comment }) {
             href={comment.postUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-[#52525b] hover:text-[#a0a0ff] transition-colors ml-auto"
+            className="text-[11px] text-[#475569] hover:text-[#a0a0ff] transition-colors ml-auto"
             aria-label="View on Bluesky"
           >
             View on Bluesky
@@ -152,7 +152,7 @@ export default function BlueskyComments({
   const hasMore = comments.length > 5
 
   return (
-    <section className="mt-8 pt-6 border-t border-[#1c1c1f]" aria-label="Discussion">
+    <section className="mt-8 pt-6 border-t border-[#1e293b]" aria-label="Discussion">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
           <svg className="w-4 h-4 text-[#a0a0ff]" viewBox="0 0 600 530" fill="currentColor" aria-hidden="true">
@@ -160,7 +160,7 @@ export default function BlueskyComments({
           </svg>
           Discussion
           {!loading && comments.length > 0 && (
-            <span className="text-[11px] font-normal text-[#71717a] ml-1">
+            <span className="text-[11px] font-normal text-[#64748b] ml-1">
               {comments.length} comment{comments.length !== 1 ? "s" : ""}
             </span>
           )}
@@ -169,12 +169,12 @@ export default function BlueskyComments({
 
       {loading ? (
         <div className="py-8 flex items-center gap-3" role="status">
-          <div className="w-5 h-5 border-2 border-[#2a2a2e] border-t-[#2563eb] rounded-full animate-spin" />
-          <span className="text-[13px] text-[#71717a]">Loading discussion…</span>
+          <div className="w-5 h-5 border-2 border-[#334155] border-t-[#2563eb] rounded-full animate-spin" />
+          <span className="text-[13px] text-[#64748b]">Loading discussion…</span>
         </div>
       ) : comments.length === 0 ? (
         <div className="py-8 text-center">
-          <p className="text-[13px] text-[#71717a] mb-3">
+          <p className="text-[13px] text-[#64748b] mb-3">
             No comments yet. Start the conversation on Bluesky.
           </p>
           <a
@@ -200,7 +200,7 @@ export default function BlueskyComments({
           {hasMore && !showAll && (
             <button
               onClick={() => setShowAll(true)}
-              className="w-full py-3 text-[13px] text-[#71717a] hover:text-white font-medium transition-colors"
+              className="w-full py-3 text-[13px] text-[#64748b] hover:text-white font-medium transition-colors"
             >
               Show {comments.length - 5} more comment{comments.length - 5 !== 1 ? "s" : ""}
             </button>
@@ -218,7 +218,7 @@ export default function BlueskyComments({
               </svg>
               Join the conversation
             </a>
-            <span className="text-[11px] text-[#52525b]">
+            <span className="text-[11px] text-[#475569]">
               Powered by Bluesky
             </span>
           </div>

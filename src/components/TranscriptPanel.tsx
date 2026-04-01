@@ -135,7 +135,7 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
           aria-controls="transcript-content"
-          className="flex items-center gap-2 text-xs font-medium text-[#8b8b96] hover:text-white transition-colors"
+          className="flex items-center gap-2 text-xs font-medium text-[#94a3b8] hover:text-white transition-colors"
         >
           <svg
             className="w-4 h-4"
@@ -153,12 +153,12 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
           </svg>
           Transcript
           {segments.length > 0 && (
-            <span className="text-[#71717a]">
+            <span className="text-[#64748b]">
               ({segments.length} segment{segments.length !== 1 ? "s" : ""})
             </span>
           )}
           {hasCached && (
-            <span className="text-[#71717a] text-[10px]">cached</span>
+            <span className="text-[#64748b] text-[10px]">cached</span>
           )}
         </button>
 
@@ -199,22 +199,22 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
         <div
           id="transcript-content"
           ref={scrollRef}
-          className="mt-3 max-h-64 overflow-y-auto scrollbar-hide bg-[#141414] rounded-lg border border-[#1e1e1e]"
+          className="mt-3 max-h-64 overflow-y-auto scrollbar-hide bg-[#0f172a] rounded-lg border border-[#1e293b]"
           tabIndex={-1}
         >
           {segments.length === 0 ? (
             <div className="px-4 py-6 text-center">
-              <p className="text-xs text-[#71717a]">
+              <p className="text-xs text-[#64748b]">
                 {isActive
                   ? "Waiting for speech... Make sure the video is playing with audio."
                   : "Press \"Start transcribing\" then play the video. The browser will listen to the audio output and generate a transcript in real time."}
               </p>
-              <p className="text-[10px] text-[#71717a] mt-2">
+              <p className="text-[10px] text-[#64748b] mt-2">
                 Transcripts are cached locally so you only need to generate them once.
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-[#1e1e1e]">
+            <div className="divide-y divide-[#1e293b]">
               {segments.map((seg, i) => {
                 const isActive =
                   currentTime >= seg.start && currentTime < seg.end
@@ -224,16 +224,16 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
                     onClick={() => seekTo(seg.start)}
                     aria-label={`Jump to ${formatTimestamp(seg.start)}: ${seg.text}`}
                     aria-current={isActive ? "true" : undefined}
-                    className={`w-full text-left px-4 py-2.5 flex gap-3 hover:bg-[#1a1a1a] transition-colors ${
-                      isActive ? "bg-[#1a1a2e]" : ""
+                    className={`w-full text-left px-4 py-2.5 flex gap-3 hover:bg-[#111827] transition-colors ${
+                      isActive ? "bg-[#1e293b]" : ""
                     }`}
                   >
-                    <span className="text-[11px] font-mono text-[#71717a] shrink-0 pt-0.5 w-10">
+                    <span className="text-[11px] font-mono text-[#64748b] shrink-0 pt-0.5 w-10">
                       {formatTimestamp(seg.start)}
                     </span>
                     <span
                       className={`text-sm leading-relaxed ${
-                        isActive ? "text-white" : "text-[#a1a1aa]"
+                        isActive ? "text-white" : "text-[#94a3b8]"
                       }`}
                     >
                       {seg.text}

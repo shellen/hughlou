@@ -52,6 +52,14 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
     useEffect(() => {
       return () => {
         if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
+        const video = videoRef.current
+        if (video) {
+          const cleanup = (video as unknown as Record<string, unknown>).__safariCleanup as (() => void) | undefined
+          if (cleanup) { cleanup(); delete (video as unknown as Record<string, unknown>).__safariCleanup }
+          video.pause()
+          video.removeAttribute("src")
+          video.load()
+        }
       }
     }, [hlsUrl])
 
@@ -71,6 +79,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
           maxBufferLength: 30,        // only buffer 30s ahead
           maxMaxBufferLength: 60,     // hard cap at 60s
           maxBufferSize: 30 * 1000 * 1000, // 30 MB max buffer
+          backBufferLength: 15,       // evict played segments after 15s
         })
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
@@ -90,17 +99,24 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
         setTimeout(() => { if (!hasSegments) setState((cur) => cur === "loading" ? "error" : cur) }, 12000)
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = hlsUrl
-        video.addEventListener("loadedmetadata", () => {
+        const onMeta = () => {
           video.play().then(() => setState("playing")).catch(() => setState("playing"))
-        })
-        video.addEventListener("error", () => setState("error"), { once: true })
+        }
+        const onErr = () => setState("error")
+        video.addEventListener("loadedmetadata", onMeta, { once: true })
+        video.addEventListener("error", onErr, { once: true })
+        // Store refs for cleanup
+        ;(video as unknown as Record<string, unknown>).__safariCleanup = () => {
+          video.removeEventListener("loadedmetadata", onMeta)
+          video.removeEventListener("error", onErr)
+        }
       }
     }
 
     const showOverlay = state !== "playing"
 
     return (
-      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-[#111113]" role="region" aria-label={`Video player: ${title}`}>
+      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-[#111827]" role="region" aria-label={`Video player: ${title}`}>
         <video
           ref={videoRef}
           controls={state === "playing"}
@@ -150,12 +166,12 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
 
             {/* Error */}
             {state === "error" && (
-              <div className="absolute inset-0 bg-[#111113] flex flex-col items-center justify-center gap-4" role="alert">
-                <p className="text-[#8b8b96] text-sm font-medium">This VOD isn&apos;t available yet</p>
-                <p className="text-[#71717a] text-xs">Still processing — check back soon</p>
+              <div className="absolute inset-0 bg-[#111827] flex flex-col items-center justify-center gap-4" role="alert">
+                <p className="text-[#94a3b8] text-sm font-medium">This VOD isn&apos;t available yet</p>
+                <p className="text-[#64748b] text-xs">Still processing — check back soon</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); setState("idle") }}
-                  className="mt-1 px-5 py-2 text-xs font-medium bg-[#1c1c1f] hover:bg-[#2a2a2e] text-white rounded-lg transition-colors"
+                  className="mt-1 px-5 py-2 text-xs font-medium bg-[#1e293b] hover:bg-[#334155] text-white rounded-lg transition-colors"
                 >
                   Retry
                 </button>

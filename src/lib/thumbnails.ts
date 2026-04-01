@@ -1,6 +1,6 @@
 const THUMB_PREFIX = "atmo-thumb-"
-const THUMB_WIDTH = 640
-const THUMB_HEIGHT = 360
+const THUMB_WIDTH = 320
+const THUMB_HEIGHT = 180
 const SEEK_TIME = 60 // seconds into the video
 
 /**

@@ -2,16 +2,32 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "HUGHLOU — ATmosphereConf 2026 Replay",
+  metadataBase: new URL("https://hughlou.com"),
+  title: {
+    default: "HUGHLOU — Conference Replay",
+    template: "%s — HUGHLOU",
+  },
   description:
-    "Every talk from ATmosphereConf 2026, on demand. Open-source conference replay powered by AT Protocol and Streamplace.",
+    "Open-source conference replay powered by AT Protocol and Streamplace.",
   icons: {
     icon: [
       {
-        url: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2309090b' width='100' height='100' rx='20'/><text x='50' y='70' text-anchor='middle' fill='%232563eb' font-family='system-ui' font-weight='900' font-size='46'>HL</text></svg>",
+        url: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230a0f1a' width='100' height='100' rx='20'/><text x='50' y='70' text-anchor='middle' fill='%232563eb' font-family='system-ui' font-weight='900' font-size='46'>HL</text></svg>",
         type: "image/svg+xml",
       },
     ],
+  },
+  openGraph: {
+    siteName: "HUGHLOU",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
@@ -38,7 +54,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
-        <header className="sticky top-0 z-50 bg-[#09090b]/90 backdrop-blur-md border-b border-[#1c1c1f]">
+        <header className="sticky top-0 z-50 bg-[#0a0f1a]/90 backdrop-blur-md border-b border-[#1e293b]">
           <nav
             aria-label="Main navigation"
             className="max-w-[1400px] mx-auto px-6 h-16 flex items-center gap-6"
@@ -66,13 +82,13 @@ export default function RootLayout({
         <main id="main-content" className="min-h-screen">
           {children}
         </main>
-        <footer className="border-t border-[#1c1c1f] py-8 mt-16">
+        <footer className="border-t border-[#1e293b] py-8 mt-16">
           <div className="max-w-[1400px] mx-auto px-6 flex flex-col items-center gap-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
-              <p className="text-xs text-[#8b8b96] tracking-wide">
+              <p className="text-xs text-[#94a3b8] tracking-wide">
                 ATmosphereConf 2026 &middot; Vancouver, BC &middot; March 28–30
               </p>
-              <div className="flex items-center gap-4 text-xs text-[#8b8b96]">
+              <div className="flex items-center gap-4 text-xs text-[#94a3b8]">
                 <span>
                   A{" "}
                   <a
@@ -85,7 +101,7 @@ export default function RootLayout({
                   </a>{" "}
                   project
                 </span>
-                <span className="text-[#1c1c1f]">|</span>
+                <span className="text-[#1e293b]">|</span>
                 <a
                   href="https://stream.place"
                   target="_blank"
@@ -94,7 +110,7 @@ export default function RootLayout({
                 >
                   Powered by Streamplace
                 </a>
-                <span className="text-[#1c1c1f]">|</span>
+                <span className="text-[#1e293b]">|</span>
                 <a
                   href="https://github.com/shellen/hughlou"
                   target="_blank"
@@ -105,10 +121,10 @@ export default function RootLayout({
                 </a>
               </div>
             </div>
-            <p className="text-[10px] text-[#52525b] text-center max-w-lg">
+            <p className="text-[10px] text-[#475569] text-center max-w-lg">
               HughLou is an independent, open-source project and is in no way affiliated with, endorsed by, or associated with{" "}
-              <a href="https://stream.place" target="_blank" rel="noopener noreferrer" className="hover:text-[#8b8b96] transition-colors">Stream.place</a> or{" "}
-              <a href="https://atmosphere.wtf" target="_blank" rel="noopener noreferrer" className="hover:text-[#8b8b96] transition-colors">ATmosphere Conf</a>.
+              <a href="https://stream.place" target="_blank" rel="noopener noreferrer" className="hover:text-[#94a3b8] transition-colors">Stream.place</a> or{" "}
+              <a href="https://atmosphere.wtf" target="_blank" rel="noopener noreferrer" className="hover:text-[#94a3b8] transition-colors">ATmosphere Conf</a>.
             </p>
           </div>
         </footer>
