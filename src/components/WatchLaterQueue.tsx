@@ -48,7 +48,7 @@ export default function WatchLaterQueue({ currentRkey }: WatchLaterQueueProps) {
             <button
               onClick={() => remove(item.rkey)}
               aria-label={`Remove "${item.title}" from Watch Later`}
-              className="absolute top-2.5 right-2 p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 opacity-0 group-hover:opacity-100 transition-all duration-150"
+              className="absolute top-2.5 right-2 p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-700/60 opacity-0 group-hover:opacity-100 transition-all duration-150"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

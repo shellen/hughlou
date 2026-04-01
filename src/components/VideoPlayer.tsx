@@ -112,7 +112,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
               >
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-colors duration-150" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-colors duration-150 shadow-lg">
+                  <div className="w-14 h-14 rounded-xl bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-colors duration-150 shadow-lg">
                     <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M8 5v14l11-7z" />
                     </svg>
