@@ -5,6 +5,9 @@ import {
   fetchLivestreamRecord,
   parseSpeaker,
   formatDuration,
+  extractDid,
+  resolvePds,
+  getLivestreamThumbUrl,
 } from "@/lib/api"
 
 const SITE_URL = "https://hughlou.com"
@@ -30,11 +33,20 @@ export async function generateMetadata({
     }
 
     let speaker = ""
+    let thumbUrl: string | undefined
     if (video.livestream?.uri) {
       const ls = await fetchLivestreamRecord(video.livestream.uri)
       if (ls) {
         const parsed = parseSpeaker(ls.title)
         speaker = parsed.speaker
+
+        if (ls.thumb?.ref?.$link) {
+          const creatorDid = extractDid(video.livestream.uri)
+          const pds = await resolvePds(creatorDid)
+          if (pds) {
+            thumbUrl = getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds)
+          }
+        }
       }
     }
 
@@ -54,11 +66,13 @@ export async function generateMetadata({
         siteName: "HUGHLOU",
         type: "video.other",
         locale: "en_US",
+        ...(thumbUrl ? { images: [{ url: thumbUrl, width: 1280, height: 720, alt: video.title }] } : {}),
       },
       twitter: {
         card: "summary_large_image",
         title: video.title,
         description,
+        ...(thumbUrl ? { images: [thumbUrl] } : {}),
       },
       alternates: {
         canonical: url,
