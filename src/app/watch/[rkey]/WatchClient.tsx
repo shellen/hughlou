@@ -366,7 +366,9 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           <div>
-            <div className="aspect-video bg-slate-900 rounded-lg skeleton" />
+            <div className="-mx-6 sm:mx-0">
+              <div className="aspect-video bg-slate-900 sm:rounded-lg skeleton" />
+            </div>
             <div className="mt-6 space-y-3">
               <div className="h-7 w-3/4 skeleton rounded" />
               <div className="h-4 w-1/3 skeleton rounded" />
@@ -427,7 +429,9 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 lg:gap-10">
         {/* Main content */}
         <div className="min-w-0">
-          <VideoPlayer ref={videoElRef} hlsUrl={hlsUrl} title={video.title} poster={thumbUrl} thumbDataUrl={thumbs[rkey]} />
+          <div className="-mx-6 sm:mx-0">
+            <VideoPlayer ref={videoElRef} hlsUrl={hlsUrl} title={video.title} poster={thumbUrl} thumbDataUrl={thumbs[rkey]} />
+          </div>
 
           {/* Prev / Next */}
           <nav aria-label="Talk navigation" className="mt-4 flex items-center justify-between">

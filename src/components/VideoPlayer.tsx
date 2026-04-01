@@ -108,7 +108,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
     const showOverlay = state !== "playing"
 
     return (
-      <div className="w-full aspect-video rounded-lg overflow-hidden relative bg-[#111113]" role="region" aria-label={`Video player: ${title}`}>
+      <div className="w-full aspect-video sm:rounded-lg overflow-hidden relative bg-[#111113]" role="region" aria-label={`Video player: ${title}`}>
         <video
           ref={videoRef}
           controls={state === "playing"}
