@@ -73,6 +73,8 @@ export default function Home() {
 
   useEffect(() => {
     if (videos.length === 0) return
+    const abortController = new AbortController()
+
     const cached: Record<string, string> = {}
     for (const v of videos) {
       const rkey = extractRkey(v.uri)
@@ -83,7 +85,9 @@ export default function Home() {
     const missing = videos
       .map((v) => ({ rkey: extractRkey(v.uri), hlsUrl: getVideoHlsUrl(extractRkey(v.uri)) }))
       .filter((item) => !cached[item.rkey])
-    if (missing.length > 0) captureThumbsBatch(missing, onThumbCapture)
+    if (missing.length > 0) captureThumbsBatch(missing, onThumbCapture, abortController.signal)
+
+    return () => { abortController.abort() }
   }, [videos, onThumbCapture])
 
   useEffect(() => {

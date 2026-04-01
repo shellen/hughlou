@@ -58,10 +58,20 @@ const VideoPlayer = forwardRef<HTMLVideoElement | null, VideoPlayerProps>(
     const handlePlay = () => {
       const video = videoRef.current
       if (!video || !hlsUrl) return
+
+      // Destroy any existing HLS instance before creating a new one
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
+
       setState("loading")
 
       if (Hls.isSupported()) {
-        const hls = new Hls({ debug: false, enableWorker: true })
+        const hls = new Hls({
+          debug: false,
+          enableWorker: true,
+          maxBufferLength: 30,        // only buffer 30s ahead
+          maxMaxBufferLength: 60,     // hard cap at 60s
+          maxBufferSize: 30 * 1000 * 1000, // 30 MB max buffer
+        })
         hlsRef.current = hls
         hls.loadSource(hlsUrl)
         hls.attachMedia(video)

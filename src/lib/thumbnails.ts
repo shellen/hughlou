@@ -150,12 +150,17 @@ export async function captureThumb(
 /**
  * Hook-friendly: capture thumbnails for a list of rkeys, updating a callback as each resolves.
  * Processes sequentially to avoid slamming the browser with too many hidden videos.
+ * Pass an AbortSignal to cancel remaining captures when the component unmounts.
  */
 export async function captureThumbsBatch(
   items: Array<{ rkey: string; hlsUrl: string }>,
-  onCapture: (rkey: string, dataUrl: string) => void
+  onCapture: (rkey: string, dataUrl: string) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   for (const item of items) {
+    // Stop processing if cancelled (e.g. component unmounted)
+    if (signal?.aborted) return
+
     // Skip if already cached
     const cached = getCachedThumb(item.rkey)
     if (cached) {
@@ -163,6 +168,7 @@ export async function captureThumbsBatch(
       continue
     }
     const result = await captureThumb(item.hlsUrl, item.rkey)
+    if (signal?.aborted) return
     if (result) {
       onCapture(item.rkey, result)
     }
