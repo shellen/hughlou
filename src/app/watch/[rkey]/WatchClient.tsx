@@ -241,7 +241,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
           videos = staticTalks.map((t) => ({
             $type: "place.stream.video",
             title: t.title,
-            source: { ref: "", size: 0, $type: "", mimeType: "" },
+            source: { ref: "", size: t.sourceSize || 0, $type: "", mimeType: "" },
             creator: t.creator,
             duration: t.duration,
             createdAt: t.createdAt,

@@ -12,6 +12,7 @@ export interface Talk {
   creatorHandle: string
   speaker: string
   handles: string[]
+  sourceSize: number
   thumbUrl: string | null
   livestreamUri: string | null
   postUri: string | null
