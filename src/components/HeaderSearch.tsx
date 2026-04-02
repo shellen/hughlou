@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { searchTalks, talks as staticTalks } from "@/lib/talks"
-import { extractRkey, formatDuration } from "@/lib/api"
+import { formatDuration } from "@/lib/api"
 
 interface HeaderSearchProps {
   /** Controlled value for real-time filtering (event page). Omit for typeahead mode (watch page). */

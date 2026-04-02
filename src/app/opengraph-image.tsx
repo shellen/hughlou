@@ -15,47 +15,66 @@ export default function OgImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #0a0f1a 0%, #0f172a 50%, #0a0f1a 100%)",
+          background: "#0f172a",
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            marginBottom: 24,
-          }}
-        >
+        {/* HUGHLOU wordmark */}
+        <div style={{ display: "flex", alignItems: "baseline", marginBottom: 32 }}>
           <span
             style={{
-              fontSize: 96,
+              fontSize: 140,
               fontWeight: 900,
               color: "#ffffff",
-              letterSpacing: "0.05em",
+              letterSpacing: "-0.02em",
             }}
           >
             HUGH
           </span>
           <span
             style={{
-              fontSize: 96,
+              fontSize: 140,
               fontWeight: 900,
               color: "#2563eb",
-              letterSpacing: "0.05em",
+              letterSpacing: "-0.02em",
             }}
           >
             LOU
           </span>
         </div>
-        <span
+
+        {/* Tagline in blue pill */}
+        <div
           style={{
-            fontSize: 28,
-            color: "#94a3b8",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
+            display: "flex",
+            alignItems: "center",
+            background: "#2563eb",
+            borderRadius: 16,
+            padding: "14px 40px",
+            marginBottom: 32,
           }}
         >
-          Conference Replay
+          <span
+            style={{
+              fontSize: 36,
+              fontWeight: 800,
+              color: "#ffffff",
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+            }}
+          >
+            Every Talk, On Demand
+          </span>
+        </div>
+
+        {/* Subtitle */}
+        <span
+          style={{
+            fontSize: 24,
+            color: "#64748b",
+          }}
+        >
+          Conference replays from the ATmosphere
         </span>
       </div>
     ),
