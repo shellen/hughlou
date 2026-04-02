@@ -26,16 +26,18 @@ export default function QualitySelector({ levels, currentLevel, onSelect }: Qual
   // Close on outside click or Escape
   useEffect(() => {
     if (!open) return
-    const handleClick = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent | TouchEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false)
     }
     document.addEventListener("mousedown", handleClick)
+    document.addEventListener("touchstart", handleClick)
     document.addEventListener("keydown", handleKey)
     return () => {
       document.removeEventListener("mousedown", handleClick)
+      document.removeEventListener("touchstart", handleClick)
       document.removeEventListener("keydown", handleKey)
     }
   }, [open])

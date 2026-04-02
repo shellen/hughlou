@@ -193,6 +193,20 @@ function VideoPlayerInner({
     }
   }, [hlsUrl, applyQualityPref])
 
+  // Toggle play/pause when tapping the video element directly (mobile tap-to-pause)
+  useEffect(() => {
+    const video = internalVideoRef.current
+    if (!video || state !== "playing") return
+
+    const handleVideoClick = () => {
+      if (video.paused) video.play()
+      else video.pause()
+    }
+
+    video.addEventListener("click", handleVideoClick)
+    return () => video.removeEventListener("click", handleVideoClick)
+  }, [state])
+
   const showOverlay = state !== "playing"
   const showQuality = state === "playing" && qualityLevels.length > 1
 
