@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react"
-import { createPlayer } from "@videojs/react"
+import { createPlayer, Poster } from "@videojs/react"
 import { videoFeatures, Video, VideoSkin } from "@videojs/react/video"
 import "@videojs/react/video/skin.css"
 import { titleToGradient } from "@/lib/gradients"
@@ -114,7 +114,7 @@ function VideoPlayerInner({
 
   return (
     <div
-      className="w-full aspect-video sm:rounded-lg overflow-hidden relative bg-slate-950"
+      className="w-full aspect-video sm:rounded-md overflow-hidden relative bg-slate-950"
       role="region"
       aria-label={`Video player: ${title}`}
       tabIndex={-1}
@@ -122,6 +122,9 @@ function VideoPlayerInner({
       {/* Video.js player — hidden until playing */}
       <div className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}>
         <VideoSkin>
+          {(thumbDataUrl || poster) && (
+            <Poster src={(thumbDataUrl || poster)!} alt={title} />
+          )}
           <Video
             ref={setVideoRef}
             playsInline
@@ -150,7 +153,7 @@ function VideoPlayerInner({
             >
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus-visible:bg-black/20 transition-colors duration-150" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-14 h-14 rounded-xl bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-colors duration-150 shadow-lg">
+                <div className="w-14 h-14 rounded-md bg-blue-600 group-hover:bg-blue-500 group-focus-visible:bg-blue-500 flex items-center justify-center transition-colors duration-150 shadow-lg">
                   <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M8 5v14l11-7z" />
                   </svg>
