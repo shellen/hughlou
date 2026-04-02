@@ -11,7 +11,6 @@ interface ShareModalProps {
   onClose: () => void
   videoTitle: string
   videoRef: React.RefObject<HTMLVideoElement | null>
-  blueskyShareUrl: string
 }
 
 export default function ShareModal({ open, onClose, videoTitle, videoRef }: ShareModalProps) {

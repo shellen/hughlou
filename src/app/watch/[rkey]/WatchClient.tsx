@@ -40,7 +40,7 @@ function ActionBar({
   videoRkey,
   videoDuration,
   videoRef,
-  blueskyShareUrl,
+
 }: {
   postUrl: string | null
   streamplaceUrl: string | null
@@ -49,7 +49,6 @@ function ActionBar({
   videoRkey: string
   videoDuration: number
   videoRef: React.RefObject<HTMLVideoElement | null>
-  blueskyShareUrl: string
 }) {
   const [shareOpen, setShareOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -89,7 +88,6 @@ function ActionBar({
         onClose={() => setShareOpen(false)}
         videoTitle={videoTitle}
         videoRef={videoRef}
-        blueskyShareUrl={blueskyShareUrl}
       />
 
       {/* Streamplace (if available) */}
@@ -542,7 +540,6 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
             videoRkey={rkey}
             videoDuration={video.duration}
             videoRef={videoElRef}
-            blueskyShareUrl={shareUrl}
           />
 
           {/* Transcript */}
