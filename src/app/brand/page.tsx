@@ -26,18 +26,13 @@ function Logotype({
   return (
     <svg
       className={className}
-      viewBox="0 0 680 100"
+      viewBox="0 0 580 100"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label={`HUGHLOU logotype — ${variant}`}
     >
-      {/* H */}
-      <text x="0" y="82" fontFamily="'Outfit', system-ui, sans-serif" fontWeight="900" fontSize="92" letterSpacing="4" fill={hugh}>
-        HUGH
-      </text>
-      {/* LOU */}
-      <text x="390" y="82" fontFamily="'Outfit', system-ui, sans-serif" fontWeight="900" fontSize="92" letterSpacing="4" fill={lou}>
-        LOU
+      <text x="0" y="82" fontFamily="'Outfit', system-ui, sans-serif" fontWeight="900" fontSize="92" letterSpacing="4">
+        <tspan fill={hugh}>HUGH</tspan><tspan fill={lou}>LOU</tspan>
       </text>
     </svg>
   )
