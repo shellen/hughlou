@@ -7,6 +7,7 @@ import Link from "next/link"
 import VideoCard from "@/components/VideoCard"
 import { listVideos, getVideoHlsUrl, extractRkey, extractDid, fetchLivestreamRecord, parseSpeaker, resolveHandle, resolvePds, getLivestreamThumbUrl, VideoRecord } from "@/lib/api"
 import { getCachedThumb, captureThumbsBatch } from "@/lib/thumbnails"
+import { talks as staticTalks, searchTalks, type Talk } from "@/lib/talks"
 
 const DAY_LABELS: Record<string, { label: string; sub: string }> = {
   "2026-03-28": { label: "Pre-Conference Workshops", sub: "Saturday, March 28" },
@@ -20,6 +21,17 @@ function getDayKey(isoDate: string): string {
 
 function getDayLabel(dateKey: string) {
   return DAY_LABELS[dateKey] || { label: dateKey, sub: "" }
+}
+
+/** Group talks by day and sort groups */
+function groupByDay<T extends { createdAt: string }>(items: T[], newestFirst: boolean): Map<string, T[]> {
+  const groups = new Map<string, T[]>()
+  for (const item of items) {
+    const key = getDayKey(item.createdAt)
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(item)
+  }
+  return new Map([...groups.entries()].sort(([a], [b]) => newestFirst ? b.localeCompare(a) : a.localeCompare(b)))
 }
 
 function HeaderSearch({ search, setSearch }: { search: string; setSearch: (s: string) => void }) {
@@ -66,9 +78,13 @@ export default function EventPage() {
   )
 }
 
+/** Whether static pre-built data is available */
+const hasStaticData = staticTalks.length > 0
+
 function Home() {
-  const [videos, setVideos] = useState<VideoRecord[]>([])
-  const [loading, setLoading] = useState(true)
+  // Live-fetched data (fallback when static data is empty)
+  const [liveVideos, setLiveVideos] = useState<VideoRecord[]>([])
+  const [loading, setLoading] = useState(!hasStaticData)
   const [cursor, setCursor] = useState<string | undefined>()
   const [hasMore, setHasMore] = useState(false)
   const searchParams = useSearchParams()
@@ -81,32 +97,75 @@ function Home() {
     setThumbs((prev) => ({ ...prev, [rkey]: dataUrl }))
   }, [])
 
+  // ── Static data path: thumbnail capture from HLS for talks missing a thumbUrl ──
   useEffect(() => {
-    if (videos.length === 0) return
+    if (!hasStaticData) return
     const abortController = new AbortController()
 
     const cached: Record<string, string> = {}
-    for (const v of videos) {
+    for (const t of staticTalks) {
+      if (t.thumbUrl) cached[t.rkey] = t.thumbUrl
+      const c = getCachedThumb(t.rkey)
+      if (c) cached[t.rkey] = c
+    }
+    if (Object.keys(cached).length > 0) setThumbs((prev) => ({ ...prev, ...cached }))
+
+    const missing = staticTalks
+      .filter((t) => !cached[t.rkey])
+      .map((t) => ({ rkey: t.rkey, hlsUrl: getVideoHlsUrl(t.rkey) }))
+    if (missing.length > 0) captureThumbsBatch(missing, onThumbCapture, abortController.signal)
+
+    return () => { abortController.abort() }
+  }, [onThumbCapture])
+
+  // ── Live fallback: fetch videos from PDS ──
+  useEffect(() => {
+    if (hasStaticData) return
+    const fetchVideos = async () => {
+      try {
+        setLoading(true)
+        const response = await listVideos()
+        const vids = response.records.map((r) => ({ ...r.value, uri: r.uri }))
+        setLiveVideos(vids)
+        setHasMore(!!response.cursor)
+        setCursor(response.cursor)
+      } catch (error) {
+        console.error("Failed to fetch videos:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchVideos()
+  }, [])
+
+  // ── Live fallback: thumbnail capture ──
+  useEffect(() => {
+    if (hasStaticData || liveVideos.length === 0) return
+    const abortController = new AbortController()
+
+    const cached: Record<string, string> = {}
+    for (const v of liveVideos) {
       const rkey = extractRkey(v.uri)
       const c = getCachedThumb(rkey)
       if (c) cached[rkey] = c
     }
     if (Object.keys(cached).length > 0) setThumbs((prev) => ({ ...prev, ...cached }))
-    const missing = videos
+    const missing = liveVideos
       .map((v) => ({ rkey: extractRkey(v.uri), hlsUrl: getVideoHlsUrl(extractRkey(v.uri)) }))
       .filter((item) => !cached[item.rkey])
     if (missing.length > 0) captureThumbsBatch(missing, onThumbCapture, abortController.signal)
 
     return () => { abortController.abort() }
-  }, [videos, onThumbCapture])
+  }, [liveVideos, onThumbCapture])
 
+  // ── Live fallback: enrich with speaker info ──
   useEffect(() => {
-    if (videos.length === 0) return
+    if (hasStaticData || liveVideos.length === 0) return
     let cancelled = false
     async function enrichSpeakers() {
       const infos: Record<string, { speaker: string; handles: string[]; creatorHandle: string; thumbUrl?: string }> = {}
       await Promise.allSettled(
-        videos.map(async (v) => {
+        liveVideos.map(async (v) => {
           const rk = extractRkey(v.uri)
           try {
             const creatorHandle = await resolveHandle(v.creator)
@@ -134,25 +193,7 @@ function Home() {
     }
     enrichSpeakers()
     return () => { cancelled = true }
-  }, [videos])
-
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        setLoading(true)
-        const response = await listVideos()
-        const vids = response.records.map((r) => ({ ...r.value, uri: r.uri }))
-        setVideos(vids)
-        setHasMore(!!response.cursor)
-        setCursor(response.cursor)
-      } catch (error) {
-        console.error("Failed to fetch videos:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchVideos()
-  }, [])
+  }, [liveVideos])
 
   const loadMore = async () => {
     if (!cursor) return
@@ -160,7 +201,7 @@ function Home() {
       setLoading(true)
       const response = await listVideos(cursor)
       const newVids = response.records.map((r) => ({ ...r.value, uri: r.uri }))
-      setVideos((prev) => [...prev, ...newVids])
+      setLiveVideos((prev) => [...prev, ...newVids])
       setHasMore(!!response.cursor)
       setCursor(response.cursor)
     } catch (error) {
@@ -170,8 +211,23 @@ function Home() {
     }
   }
 
-  const { filteredVideos, groupedByDay } = useMemo(() => {
-    const sorted = [...videos].sort((a, b) => {
+  // ── Search + sort + group ──
+  const { filteredItems, groupedByDay, totalCount } = useMemo(() => {
+    if (hasStaticData) {
+      // Static path: use Fuse.js for search
+      const results = search.trim() ? searchTalks(search) : staticTalks
+      const sorted = [...results].sort((a, b) => {
+        // When searching, preserve Fuse relevance order; otherwise sort by date
+        if (search.trim()) return 0
+        const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        return newestFirst ? diff : -diff
+      })
+      const grouped = groupByDay(sorted, newestFirst)
+      return { filteredItems: sorted, groupedByDay: grouped, totalCount: staticTalks.length }
+    }
+
+    // Live fallback: substring search
+    const sorted = [...liveVideos].sort((a, b) => {
       const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       return newestFirst ? diff : -diff
     })
@@ -184,15 +240,27 @@ function Home() {
           return info.speaker.toLowerCase().includes(q) || info.handles.some((h) => h.toLowerCase().includes(q)) || info.creatorHandle.toLowerCase().includes(q)
         })
       : sorted
-    const groups = new Map<string, VideoRecord[]>()
-    for (const v of filtered) {
-      const key = getDayKey(v.createdAt)
-      if (!groups.has(key)) groups.set(key, [])
-      groups.get(key)!.push(v)
+    const grouped = groupByDay(filtered, newestFirst)
+    return { filteredItems: filtered, groupedByDay: grouped, totalCount: liveVideos.length }
+  }, [search, newestFirst, liveVideos, speakerInfo])
+
+  /** Get thumb URL for a talk/video by rkey */
+  const getThumb = useCallback((rkey: string): string | undefined => {
+    if (hasStaticData) {
+      return thumbs[rkey] || staticTalks.find((t) => t.rkey === rkey)?.thumbUrl || undefined
     }
-    const sortedGroups = new Map([...groups.entries()].sort(([a], [b]) => newestFirst ? b.localeCompare(a) : a.localeCompare(b)))
-    return { filteredVideos: filtered, groupedByDay: sortedGroups }
-  }, [videos, search, speakerInfo, newestFirst])
+    return thumbs[rkey] || speakerInfo[rkey]?.thumbUrl
+  }, [thumbs, speakerInfo])
+
+  /** Get URI — static talks store it directly */
+  const getUri = (item: Talk | VideoRecord): string => {
+    return item.uri
+  }
+
+  const getRkey = (item: Talk | VideoRecord): string => {
+    if ("rkey" in item) return item.rkey
+    return extractRkey(item.uri)
+  }
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10">
@@ -236,9 +304,9 @@ function Home() {
         <p className="text-sm text-slate-500 leading-relaxed max-w-2xl">
           Three days of workshops, demos, and deep dives — from Vancouver, BC. March 28–30, 2026.
         </p>
-        {videos.length > 0 && (
+        {totalCount > 0 && (
           <p className="text-sm text-slate-600 mt-3 font-mono">
-            {videos.length}&nbsp;talks &middot; 3 days
+            {totalCount}&nbsp;talks &middot; 3 days
           </p>
         )}
       </div>
@@ -246,7 +314,7 @@ function Home() {
       <div className="flex items-center justify-between mb-6">
         {search ? (
           <p className="text-xs text-slate-400 font-mono" role="status" aria-live="polite" aria-atomic="true">
-            {filteredVideos.length} result{filteredVideos.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
+            {filteredItems.length} result{filteredItems.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
           </p>
         ) : (
           <div />
@@ -263,7 +331,7 @@ function Home() {
         </button>
       </div>
 
-      {loading && videos.length === 0 ? (
+      {loading && totalCount === 0 ? (
         <div className="space-y-16" role="status" aria-label="Loading talks">
           <span className="sr-only">Loading talks…</span>
           <div>
@@ -279,13 +347,13 @@ function Home() {
             </div>
           </div>
         </div>
-      ) : filteredVideos.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-slate-400 text-base">{search ? "No talks match your search." : "No videos found."}</p>
         </div>
       ) : (
         <div className="space-y-16">
-          {[...groupedByDay.entries()].map(([dateKey, dayVideos]) => {
+          {[...groupedByDay.entries()].map(([dateKey, dayItems]) => {
             const { label, sub } = getDayLabel(dateKey)
             return (
               <section key={dateKey}>
@@ -293,21 +361,21 @@ function Home() {
                   <h2 className="text-lg font-bold text-white tracking-tight">{label}</h2>
                   {sub && (
                     <span className="text-xs text-slate-500 font-mono">
-                      {sub} &middot; {dayVideos.length} talk{dayVideos.length !== 1 ? "s" : ""}
+                      {sub} &middot; {dayItems.length} talk{dayItems.length !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8">
-                  {dayVideos.map((video) => {
-                    const rkey = extractRkey(video.uri)
+                  {dayItems.map((item) => {
+                    const rkey = getRkey(item)
                     return (
                       <VideoCard
-                        key={video.uri}
-                        title={video.title}
-                        duration={video.duration}
-                        createdAt={video.createdAt}
-                        uri={video.uri}
-                        thumbDataUrl={thumbs[rkey] || speakerInfo[rkey]?.thumbUrl}
+                        key={getUri(item)}
+                        title={item.title}
+                        duration={item.duration}
+                        createdAt={item.createdAt}
+                        uri={getUri(item)}
+                        thumbDataUrl={getThumb(rkey)}
                       />
                     )
                   })}
@@ -316,7 +384,7 @@ function Home() {
             )
           })}
 
-          {hasMore && !search && (
+          {!hasStaticData && hasMore && !search && (
             <div className="flex justify-center pt-4">
               <button
                 onClick={loadMore}

@@ -4,12 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "build:data": "tsx scripts/build-talks-index.ts",
+    "prebuild": "tsx scripts/build-talks-index.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "@videojs/react": "^10.0.0-alpha.11",
+    "fuse.js": "^7.1.0",
     "hls.js": "^1.5.0",
     "next": "^16.2.1",
     "react": "^19.0.0",
@@ -24,6 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.2.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

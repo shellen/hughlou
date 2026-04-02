@@ -29,6 +29,7 @@ import {
   LivestreamRecord,
 } from "@/lib/api"
 import { getCachedThumb, captureThumbsBatch } from "@/lib/thumbnails"
+import { talks as staticTalks } from "@/lib/talks"
 
 function WatchSearch() {
   const [mounted, setMounted] = useState(false)
@@ -254,6 +255,8 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     setThumbs((prev) => ({ ...prev, [rk]: dataUrl }))
   }, [])
 
+  const hasStaticData = staticTalks.length > 0
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -265,28 +268,62 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
         setSpeakerHandles([])
         setCreatorHandle("")
 
-        const response = await listVideos()
-        const videos = response.records.map((r) => ({ ...r.value, uri: r.uri }))
-        setAllVideos(videos)
+        // Use static data if available, otherwise fetch live
+        let videos: VideoRecord[]
+        if (hasStaticData) {
+          videos = staticTalks.map((t) => ({
+            $type: "place.stream.video",
+            title: t.title,
+            source: { ref: "", size: 0, $type: "", mimeType: "" },
+            creator: t.creator,
+            duration: t.duration,
+            createdAt: t.createdAt,
+            livestream: { cid: "", uri: t.livestreamUri || "" },
+            uri: t.uri,
+          }))
+          setAllVideos(videos)
 
-        const currentVideo = videos.find((v) => v.uri.endsWith(`/${rkey}`))
-        if (!currentVideo) { setError("Video not found"); return }
+          const staticTalk = staticTalks.find((t) => t.rkey === rkey)
+          if (!staticTalk) { setError("Video not found"); return }
 
-        setVideo(currentVideo)
-        setHlsUrl(getVideoHlsUrl(rkey))
-        resolveHandle(currentVideo.creator).then(setCreatorHandle)
+          const currentVideo = videos.find((v) => v.uri === staticTalk.uri)!
+          setVideo(currentVideo)
+          setHlsUrl(getVideoHlsUrl(rkey))
+          setCreatorHandle(staticTalk.creatorHandle)
+          setSpeaker(staticTalk.speaker)
+          setSpeakerHandles(staticTalk.handles)
+          if (staticTalk.thumbUrl) setThumbUrl(staticTalk.thumbUrl)
 
-        if (currentVideo.livestream?.uri) {
-          const ls = await fetchLivestreamRecord(currentVideo.livestream.uri)
-          if (ls) {
-            setLivestream(ls)
-            const parsed = parseSpeaker(ls.title)
-            setSpeaker(parsed.speaker)
-            setSpeakerHandles(parsed.handles)
-            if (ls.thumb?.ref?.$link) {
-              const creatorDid = extractDid(currentVideo.livestream.uri)
-              const pds = await resolvePds(creatorDid)
-              if (pds) setThumbUrl(getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds))
+          // Still fetch livestream record for Bluesky comments
+          if (staticTalk.livestreamUri) {
+            fetchLivestreamRecord(staticTalk.livestreamUri).then((ls) => {
+              if (ls) setLivestream(ls)
+            }).catch(() => {})
+          }
+        } else {
+          const response = await listVideos()
+          videos = response.records.map((r) => ({ ...r.value, uri: r.uri }))
+          setAllVideos(videos)
+
+          const currentVideo = videos.find((v) => v.uri.endsWith(`/${rkey}`))
+          if (!currentVideo) { setError("Video not found"); return }
+
+          setVideo(currentVideo)
+          setHlsUrl(getVideoHlsUrl(rkey))
+          resolveHandle(currentVideo.creator).then(setCreatorHandle)
+
+          if (currentVideo.livestream?.uri) {
+            const ls = await fetchLivestreamRecord(currentVideo.livestream.uri)
+            if (ls) {
+              setLivestream(ls)
+              const parsed = parseSpeaker(ls.title)
+              setSpeaker(parsed.speaker)
+              setSpeakerHandles(parsed.handles)
+              if (ls.thumb?.ref?.$link) {
+                const creatorDid = extractDid(currentVideo.livestream.uri)
+                const pds = await resolvePds(creatorDid)
+                if (pds) setThumbUrl(getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds))
+              }
             }
           }
         }
@@ -298,7 +335,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
       }
     }
     fetchData()
-  }, [rkey])
+  }, [rkey, hasStaticData])
 
   useEffect(() => {
     if (allVideos.length === 0) return
@@ -321,6 +358,20 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
   // Enrich sidebar videos with speaker info
   useEffect(() => {
     if (allVideos.length === 0) return
+
+    // Static path: speaker info is already in the static data
+    if (hasStaticData) {
+      const infos: Record<string, { speaker: string; handles: string[]; thumbUrl?: string }> = {}
+      for (const t of staticTalks) {
+        if (t.rkey !== rkey) {
+          infos[t.rkey] = { speaker: t.speaker, handles: t.handles, thumbUrl: t.thumbUrl || undefined }
+        }
+      }
+      setSidebarSpeakers(infos)
+      return
+    }
+
+    // Live fallback
     let cancelled = false
     const others = allVideos.filter((v) => v.uri !== video?.uri).slice(0, 12)
     async function enrichSidebar() {
@@ -349,7 +400,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     }
     enrichSidebar()
     return () => { cancelled = true }
-  }, [allVideos, video])
+  }, [allVideos, video, hasStaticData, rkey])
 
   const { prevVideo, nextVideo } = useMemo(() => {
     if (!video || allVideos.length === 0) return { prevVideo: null, nextVideo: null }
