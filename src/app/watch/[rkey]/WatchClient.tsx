@@ -384,6 +384,12 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
   if (loading) {
     return (
       <div className="max-w-[1400px] mx-auto px-6 py-8">
+        {/* Breadcrumb skeleton */}
+        <div className="mb-5 flex items-center gap-2">
+          <div className="h-3 w-36 skeleton rounded" />
+          <span className="text-slate-700">/</span>
+          <div className="h-3 w-48 skeleton rounded" />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           <div>
             <div className="-mx-6 sm:mx-0">
