@@ -1,4 +1,5 @@
 import Fuse from "fuse.js"
+import type { IFuseOptions } from "fuse.js"
 import staticTalks from "@/data/talks.json"
 
 export interface Talk {
@@ -18,7 +19,7 @@ export interface Talk {
 
 export const talks: Talk[] = staticTalks as Talk[]
 
-const fuseOptions: Fuse.IFuseOptions<Talk> = {
+const fuseOptions: IFuseOptions<Talk> = {
   keys: [
     { name: "title", weight: 0.4 },
     { name: "speaker", weight: 0.3 },
