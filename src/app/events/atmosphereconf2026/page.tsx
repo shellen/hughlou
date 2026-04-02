@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useState, useMemo, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
-import { createPortal } from "react-dom"
 import Link from "next/link"
 import VideoCard from "@/components/VideoCard"
+import HeaderSearch from "@/components/HeaderSearch"
 import { listVideos, getVideoHlsUrl, extractRkey, extractDid, fetchLivestreamRecord, parseSpeaker, resolveHandle, resolvePds, getLivestreamThumbUrl, VideoRecord } from "@/lib/api"
 import { getCachedThumb, captureThumbsBatch } from "@/lib/thumbnails"
 import { talks as staticTalks, searchTalks, type Talk } from "@/lib/talks"
@@ -32,42 +32,6 @@ function groupByDay<T extends { createdAt: string }>(items: T[], newestFirst: bo
     groups.get(key)!.push(item)
   }
   return new Map([...groups.entries()].sort(([a], [b]) => newestFirst ? b.localeCompare(a) : a.localeCompare(b)))
-}
-
-function HeaderSearch({ search, setSearch }: { search: string; setSearch: (s: string) => void }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  if (!mounted) return null
-  const el = document.getElementById("header-search")
-  if (!el) return null
-
-  return createPortal(
-    <div className="relative w-full" role="search" aria-label="Search talks">
-      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-      <input
-        type="search"
-        placeholder="Search talks, speakers, handles..."
-        aria-label="Search talks, speakers, and handles"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full pl-10 pr-10 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-700 focus:ring-1 focus:ring-slate-700 transition-all"
-      />
-      {search && (
-        <button
-          onClick={() => setSearch("")}
-          aria-label="Clear search"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )}
-    </div>,
-    el
-  )
 }
 
 export default function EventPage() {
@@ -264,7 +228,7 @@ function Home() {
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10">
-      <HeaderSearch search={search} setSearch={setSearch} />
+      <HeaderSearch value={search} onChange={setSearch} />
 
       {/* Hero — ATmosphere Conf style */}
       <div className="mb-14">
