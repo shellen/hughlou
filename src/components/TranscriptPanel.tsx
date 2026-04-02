@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback, Fragment } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import {
   TranscriptSegment,
   TranscriptionStatus,
