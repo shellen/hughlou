@@ -1,15 +1,16 @@
 "use client"
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react"
-import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import VideoPlayer from "@/components/VideoPlayer"
 import VideoCard from "@/components/VideoCard"
+import HeaderSearch from "@/components/HeaderSearch"
 import TranscriptPanel from "@/components/TranscriptPanel"
 import BlueskyComments from "@/components/BlueskyComments"
 import WatchLaterButton from "@/components/WatchLaterButton"
 import WatchLaterQueue from "@/components/WatchLaterQueue"
+import ShareModal from "@/components/ShareModal"
 import {
   listVideos,
   getVideoHlsUrl,
@@ -29,58 +30,27 @@ import {
   LivestreamRecord,
 } from "@/lib/api"
 import { getCachedThumb, captureThumbsBatch } from "@/lib/thumbnails"
-
-function WatchSearch() {
-  const [mounted, setMounted] = useState(false)
-  const [query, setQuery] = useState("")
-  const router = useRouter()
-
-  useEffect(() => setMounted(true), [])
-  if (!mounted) return null
-  const el = document.getElementById("header-search")
-  if (!el) return null
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (query.trim()) router.push(`/events/atmosphereconf2026?q=${encodeURIComponent(query.trim())}`)
-  }
-
-  return createPortal(
-    <form onSubmit={handleSubmit} className="relative w-full" role="search" aria-label="Search talks">
-      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-      <input
-        type="search"
-        placeholder="Search talks..."
-        aria-label="Search all talks"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-700 focus:ring-1 focus:ring-slate-700 transition-all"
-      />
-    </form>,
-    el
-  )
-}
+import { talks as staticTalks } from "@/lib/talks"
 
 function ActionBar({
-  shareUrl,
   postUrl,
   streamplaceUrl,
   atRecordUrl,
   videoTitle,
   videoRkey,
   videoDuration,
+  videoRef,
+
 }: {
-  shareUrl: string
   postUrl: string | null
   streamplaceUrl: string | null
   atRecordUrl: string
   videoTitle: string
   videoRkey: string
   videoDuration: number
+  videoRef: React.RefObject<HTMLVideoElement | null>
 }) {
-  const [copied, setCopied] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
@@ -100,61 +70,25 @@ function ActionBar({
     }
   }, [moreOpen])
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch { /* fallback */ }
-  }
-
-  const messagesUrl = `sms:&body=${encodeURIComponent(`${videoTitle} — ${typeof window !== "undefined" ? window.location.href : ""}`)}`
-
   return (
     <div className="mt-5 pt-5 border-t border-slate-800 flex flex-wrap items-center gap-2" role="group" aria-label="Talk actions">
-      {/* Share on Bluesky */}
-      <a
-        href={shareUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Share on Bluesky (opens in new tab)"
+      {/* Share */}
+      <button
+        onClick={() => setShareOpen(true)}
         className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-indigo-300 bg-indigo-300/8 hover:bg-indigo-300/15 transition-colors"
       >
-        <svg className="w-3.5 h-3.5" viewBox="0 0 600 530" fill="currentColor" aria-hidden="true">
-          <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
         </svg>
         Share
-      </a>
-
-      {/* Copy Link */}
-      <button
-        onClick={handleCopy}
-        aria-label={copied ? "Link copied" : "Copy link to clipboard"}
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
-      >
-        {copied ? (
-          <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-        )}
-        {copied ? "Copied!" : "Copy Link"}
       </button>
 
-      {/* Messages */}
-      <a
-        href={messagesUrl}
-        aria-label="Share via Messages"
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-        Messages
-      </a>
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        videoTitle={videoTitle}
+        videoRef={videoRef}
+      />
 
       {/* Streamplace (if available) */}
       {streamplaceUrl && (
@@ -254,6 +188,8 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     setThumbs((prev) => ({ ...prev, [rk]: dataUrl }))
   }, [])
 
+  const hasStaticData = staticTalks.length > 0
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -265,28 +201,62 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
         setSpeakerHandles([])
         setCreatorHandle("")
 
-        const response = await listVideos()
-        const videos = response.records.map((r) => ({ ...r.value, uri: r.uri }))
-        setAllVideos(videos)
+        // Use static data if available, otherwise fetch live
+        let videos: VideoRecord[]
+        if (hasStaticData) {
+          videos = staticTalks.map((t) => ({
+            $type: "place.stream.video",
+            title: t.title,
+            source: { ref: "", size: t.sourceSize || 0, $type: "", mimeType: "" },
+            creator: t.creator,
+            duration: t.duration,
+            createdAt: t.createdAt,
+            livestream: { cid: "", uri: t.livestreamUri || "" },
+            uri: t.uri,
+          }))
+          setAllVideos(videos)
 
-        const currentVideo = videos.find((v) => v.uri.endsWith(`/${rkey}`))
-        if (!currentVideo) { setError("Video not found"); return }
+          const staticTalk = staticTalks.find((t) => t.rkey === rkey)
+          if (!staticTalk) { setError("Video not found"); return }
 
-        setVideo(currentVideo)
-        setHlsUrl(getVideoHlsUrl(rkey))
-        resolveHandle(currentVideo.creator).then(setCreatorHandle)
+          const currentVideo = videos.find((v) => v.uri === staticTalk.uri)!
+          setVideo(currentVideo)
+          setHlsUrl(getVideoHlsUrl(rkey))
+          setCreatorHandle(staticTalk.creatorHandle)
+          setSpeaker(staticTalk.speaker)
+          setSpeakerHandles(staticTalk.handles)
+          if (staticTalk.thumbUrl) setThumbUrl(staticTalk.thumbUrl)
 
-        if (currentVideo.livestream?.uri) {
-          const ls = await fetchLivestreamRecord(currentVideo.livestream.uri)
-          if (ls) {
-            setLivestream(ls)
-            const parsed = parseSpeaker(ls.title)
-            setSpeaker(parsed.speaker)
-            setSpeakerHandles(parsed.handles)
-            if (ls.thumb?.ref?.$link) {
-              const creatorDid = extractDid(currentVideo.livestream.uri)
-              const pds = await resolvePds(creatorDid)
-              if (pds) setThumbUrl(getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds))
+          // Still fetch livestream record for Bluesky comments
+          if (staticTalk.livestreamUri) {
+            fetchLivestreamRecord(staticTalk.livestreamUri).then((ls) => {
+              if (ls) setLivestream(ls)
+            }).catch(() => {})
+          }
+        } else {
+          const response = await listVideos()
+          videos = response.records.map((r) => ({ ...r.value, uri: r.uri }))
+          setAllVideos(videos)
+
+          const currentVideo = videos.find((v) => v.uri.endsWith(`/${rkey}`))
+          if (!currentVideo) { setError("Video not found"); return }
+
+          setVideo(currentVideo)
+          setHlsUrl(getVideoHlsUrl(rkey))
+          resolveHandle(currentVideo.creator).then(setCreatorHandle)
+
+          if (currentVideo.livestream?.uri) {
+            const ls = await fetchLivestreamRecord(currentVideo.livestream.uri)
+            if (ls) {
+              setLivestream(ls)
+              const parsed = parseSpeaker(ls.title)
+              setSpeaker(parsed.speaker)
+              setSpeakerHandles(parsed.handles)
+              if (ls.thumb?.ref?.$link) {
+                const creatorDid = extractDid(currentVideo.livestream.uri)
+                const pds = await resolvePds(creatorDid)
+                if (pds) setThumbUrl(getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds))
+              }
             }
           }
         }
@@ -298,7 +268,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
       }
     }
     fetchData()
-  }, [rkey])
+  }, [rkey, hasStaticData])
 
   useEffect(() => {
     if (allVideos.length === 0) return
@@ -321,6 +291,20 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
   // Enrich sidebar videos with speaker info
   useEffect(() => {
     if (allVideos.length === 0) return
+
+    // Static path: speaker info is already in the static data
+    if (hasStaticData) {
+      const infos: Record<string, { speaker: string; handles: string[]; thumbUrl?: string }> = {}
+      for (const t of staticTalks) {
+        if (t.rkey !== rkey) {
+          infos[t.rkey] = { speaker: t.speaker, handles: t.handles, thumbUrl: t.thumbUrl || undefined }
+        }
+      }
+      setSidebarSpeakers(infos)
+      return
+    }
+
+    // Live fallback
     let cancelled = false
     const others = allVideos.filter((v) => v.uri !== video?.uri).slice(0, 12)
     async function enrichSidebar() {
@@ -349,7 +333,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     }
     enrichSidebar()
     return () => { cancelled = true }
-  }, [allVideos, video])
+  }, [allVideos, video, hasStaticData, rkey])
 
   const { prevVideo, nextVideo } = useMemo(() => {
     if (!video || allVideos.length === 0) return { prevVideo: null, nextVideo: null }
@@ -381,9 +365,35 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [nextVideo, prevVideo, router])
 
+  // Seek to ?t= timestamp on load
+  useEffect(() => {
+    if (loading || !video) return
+    const params = new URLSearchParams(window.location.search)
+    const t = parseInt(params.get("t") || "", 10)
+    if (!t || t <= 0) return
+
+    const trySeek = () => {
+      const el = videoElRef.current
+      if (el && el.readyState >= 1) {
+        el.currentTime = t
+      } else {
+        // Video not ready yet — wait for metadata
+        const onReady = () => { el!.currentTime = t }
+        videoElRef.current?.addEventListener("loadedmetadata", onReady, { once: true })
+      }
+    }
+    trySeek()
+  }, [loading, video, rkey])
+
   if (loading) {
     return (
       <div className="max-w-[1400px] mx-auto px-6 py-8">
+        {/* Breadcrumb skeleton */}
+        <div className="mb-5 flex items-center gap-2">
+          <div className="h-3 w-36 skeleton rounded" />
+          <span className="text-slate-700">/</span>
+          <div className="h-3 w-48 skeleton rounded" />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           <div>
             <div className="-mx-6 sm:mx-0">
@@ -435,7 +445,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8">
-      <WatchSearch />
+      <HeaderSearch />
 
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-5 text-xs text-slate-500 font-mono">
@@ -523,13 +533,13 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
 
           {/* Actions */}
           <ActionBar
-            shareUrl={shareUrl}
             postUrl={postUrl}
             streamplaceUrl={streamplaceUrl}
             atRecordUrl={`https://pds.ls/${video.uri}`}
             videoTitle={video.title}
             videoRkey={rkey}
             videoDuration={video.duration}
+            videoRef={videoElRef}
           />
 
           {/* Transcript */}
