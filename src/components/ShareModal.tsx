@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faCopy, faCheck, faMessage } from "@fortawesome/free-solid-svg-icons"
+import { faCopy, faCheck, faCommentSms, faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons"
 import { faBluesky, faThreads, faMastodon, faRedditAlien, faLinkedin, faFacebookF, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatDuration } from "@/lib/api"
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
@@ -87,8 +87,6 @@ export default function ShareModal({ open, onClose, videoTitle, videoRef }: Shar
     setShowMastodonInput(false)
   }
 
-  const isAppleDevice = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
-
   const socials: { name: string; icon: IconDefinition; hoverColor: string; onClick: () => void }[] = [
     {
       name: "Bluesky",
@@ -132,11 +130,17 @@ export default function ShareModal({ open, onClose, videoTitle, videoRef }: Shar
       hoverColor: "group-hover:text-green-400",
       onClick: () => openShare(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`),
     },
-    ...(isAppleDevice ? [{
-      name: "Messages",
-      icon: faMessage,
+    {
+      name: "SMS",
+      icon: faCommentSms,
       hoverColor: "group-hover:text-emerald-400",
       onClick: () => { window.location.href = `sms:&body=${encodeURIComponent(`${shareText} ${shareUrl}`)}`; onClose() },
+    },
+    ...(typeof navigator !== "undefined" && "share" in navigator ? [{
+      name: "More...",
+      icon: faArrowUpFromBracket,
+      hoverColor: "group-hover:text-slate-200",
+      onClick: () => { navigator.share({ title: shareText, url: shareUrl }).catch(() => {}); onClose() },
     }] : []),
   ]
 
