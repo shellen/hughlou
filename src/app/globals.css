@@ -109,9 +109,11 @@ a {
 @media (min-width: 640px) {
   .video-js,
   .video-js .vjs-tech,
-  .video-js video {
-    border-radius: 0.375rem;
-    overflow: hidden;
+  .video-js video,
+  [data-vjs-player],
+  [data-vjs-player] video {
+    border-radius: 0.375rem !important;
+    overflow: hidden !important;
   }
 }
 
