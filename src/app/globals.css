@@ -105,16 +105,24 @@ a {
   height: 0 !important;
 }
 
-/* Ensure Video.js player matches container roundness during playback */
+/* Video.js v10 skin overrides */
+.media-default-skin {
+  --media-border-radius: 0;
+}
+
 @media (min-width: 640px) {
-  .video-js,
-  .video-js .vjs-tech,
-  .video-js video,
-  [data-vjs-player],
-  [data-vjs-player] video {
-    border-radius: 0.375rem !important;
-    overflow: hidden !important;
+  .media-default-skin {
+    --media-border-radius: 0.375rem;
   }
+}
+
+/* Progress bar + volume slider fill: match play button blue */
+.media-default-skin .media-slider__fill {
+  background-color: #2563eb;
+}
+
+.media-default-skin .media-slider__thumb {
+  color: #2563eb;
 }
 
 .skeleton {

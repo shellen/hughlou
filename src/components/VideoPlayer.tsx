@@ -120,7 +120,7 @@ function VideoPlayerInner({
       tabIndex={-1}
     >
       {/* Video.js player — hidden until playing */}
-      <div className={`w-full h-full sm:rounded-md overflow-hidden ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}>
+      <div className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}>
         <VideoSkin>
           {(thumbDataUrl || poster) && (
             <Poster src={(thumbDataUrl || poster)!} alt={title} />
