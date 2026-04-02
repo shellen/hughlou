@@ -39,6 +39,7 @@ function ActionBar({
   videoTitle,
   videoRkey,
   videoDuration,
+  videoRef,
 }: {
   shareUrl: string
   postUrl: string | null
@@ -47,8 +48,9 @@ function ActionBar({
   videoTitle: string
   videoRkey: string
   videoDuration: number
+  videoRef: React.RefObject<HTMLVideoElement | null>
 }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<"link" | "timestamp" | false>(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
@@ -68,13 +70,38 @@ function ActionBar({
     }
   }, [moreOpen])
 
+  const getBaseUrl = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete("t")
+    return url.toString()
+  }
+
+  const getTimestampUrl = () => {
+    const t = Math.floor(videoRef.current?.currentTime || 0)
+    if (t <= 0) return getBaseUrl()
+    const url = new URL(window.location.href)
+    url.searchParams.set("t", String(t))
+    return url.toString()
+  }
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopied(true)
+      await navigator.clipboard.writeText(getBaseUrl())
+      setCopied("link")
       setTimeout(() => setCopied(false), 2000)
     } catch { /* fallback */ }
   }
+
+  const handleCopyTimestamp = async () => {
+    try {
+      await navigator.clipboard.writeText(getTimestampUrl())
+      setCopied("timestamp")
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* fallback */ }
+  }
+
+  const currentSeconds = Math.floor(videoRef.current?.currentTime || 0)
+  const timestampLabel = formatDuration(currentSeconds * 1_000_000_000)
 
   const messagesUrl = `sms:&body=${encodeURIComponent(`${videoTitle} — ${typeof window !== "undefined" ? window.location.href : ""}`)}`
 
@@ -97,10 +124,10 @@ function ActionBar({
       {/* Copy Link */}
       <button
         onClick={handleCopy}
-        aria-label={copied ? "Link copied" : "Copy link to clipboard"}
+        aria-label={copied === "link" ? "Link copied" : "Copy link to clipboard"}
         className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
       >
-        {copied ? (
+        {copied === "link" ? (
           <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -109,7 +136,25 @@ function ActionBar({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
         )}
-        {copied ? "Copied!" : "Copy Link"}
+        {copied === "link" ? "Copied!" : "Copy Link"}
+      </button>
+
+      {/* Copy Link at Timestamp */}
+      <button
+        onClick={handleCopyTimestamp}
+        aria-label={copied === "timestamp" ? "Timestamped link copied" : `Copy link at ${timestampLabel}`}
+        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
+      >
+        {copied === "timestamp" ? (
+          <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )}
+        {copied === "timestamp" ? "Copied!" : `Copy at ${timestampLabel}`}
       </button>
 
       {/* Messages */}
@@ -399,6 +444,26 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [nextVideo, prevVideo, router])
 
+  // Seek to ?t= timestamp on load
+  useEffect(() => {
+    if (loading || !video) return
+    const params = new URLSearchParams(window.location.search)
+    const t = parseInt(params.get("t") || "", 10)
+    if (!t || t <= 0) return
+
+    const trySeek = () => {
+      const el = videoElRef.current
+      if (el && el.readyState >= 1) {
+        el.currentTime = t
+      } else {
+        // Video not ready yet — wait for metadata
+        const onReady = () => { el!.currentTime = t }
+        videoElRef.current?.addEventListener("loadedmetadata", onReady, { once: true })
+      }
+    }
+    trySeek()
+  }, [loading, video, rkey])
+
   if (loading) {
     return (
       <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -554,6 +619,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
             videoTitle={video.title}
             videoRkey={rkey}
             videoDuration={video.duration}
+            videoRef={videoElRef}
           />
 
           {/* Transcript */}
