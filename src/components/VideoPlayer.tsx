@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react"
 import { createPlayer, Poster } from "@videojs/react"
-import { videoFeatures, Video } from "@videojs/react/video"
+import { videoFeatures, Video, VideoSkin } from "@videojs/react/video"
 import "@videojs/react/video/skin.css"
 import { titleToGradient } from "@/lib/gradients"
-import VideoPlayerSkin from "./VideoPlayerSkin"
-import type { QualityLevel } from "./QualitySelector"
+import QualitySelector, { type QualityLevel } from "./QualitySelector"
 
 const QUALITY_STORAGE_KEY = "hughlou-quality-pref"
 
@@ -171,7 +170,7 @@ function VideoPlayerInner({
       })
 
       hls.on(Hls.Events.LEVEL_SWITCHED, () => {
-        // When auto-switching, keep UI in sync. Only update if in auto mode.
+        // When auto-switching, keep UI in sync
         if (hls.autoLevelEnabled) {
           setCurrentQualityLevel(-1)
         }
@@ -195,6 +194,7 @@ function VideoPlayerInner({
   }, [hlsUrl, applyQualityPref])
 
   const showOverlay = state !== "playing"
+  const showQuality = state === "playing" && qualityLevels.length > 1
 
   return (
     <div
@@ -205,11 +205,7 @@ function VideoPlayerInner({
     >
       {/* Video.js player — hidden until playing */}
       <div className={`w-full h-full ${state === "playing" ? "" : "opacity-0 pointer-events-none absolute inset-0"}`}>
-        <VideoPlayerSkin
-          qualityLevels={qualityLevels}
-          currentQualityLevel={currentQualityLevel}
-          onSelectQuality={handleSelectQuality}
-        >
+        <VideoSkin>
           {(thumbDataUrl || poster) && (
             <Poster src={(thumbDataUrl || poster)!} alt={title} />
           )}
@@ -218,8 +214,17 @@ function VideoPlayerInner({
             playsInline
             aria-label={title}
           />
-        </VideoPlayerSkin>
+        </VideoSkin>
       </div>
+
+      {/* Quality selector — overlaid on the player, above the control bar */}
+      {showQuality && (
+        <QualitySelector
+          levels={qualityLevels}
+          currentLevel={currentQualityLevel}
+          onSelect={handleSelectQuality}
+        />
+      )}
 
       {showOverlay && (
         <div className="absolute inset-0">
