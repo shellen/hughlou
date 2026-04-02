@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, Fragment } from "react"
 import {
   TranscriptSegment,
   TranscriptionStatus,
@@ -120,6 +120,24 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
   if (!supported) return null
 
   const isActive = status === "listening" || status === "paused"
+  const [showInfo, setShowInfo] = useState(false)
+  const infoRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showInfo) return
+    const handleClick = (e: MouseEvent) => {
+      if (infoRef.current && !infoRef.current.contains(e.target as Node)) setShowInfo(false)
+    }
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowInfo(false)
+    }
+    document.addEventListener("mousedown", handleClick)
+    document.addEventListener("keydown", handleEsc)
+    return () => {
+      document.removeEventListener("mousedown", handleClick)
+      document.removeEventListener("keydown", handleEsc)
+    }
+  }, [showInfo])
 
   return (
     <div className="mt-4" role="region" aria-label="Transcript">
@@ -145,6 +163,7 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
             />
           </svg>
           Transcript
+          <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 rounded">Beta</span>
           {segments.length > 0 && (
             <span className="text-slate-500">
               ({segments.length} segment{segments.length !== 1 ? "s" : ""})
@@ -154,6 +173,34 @@ export default function TranscriptPanel({ rkey, videoRef }: TranscriptPanelProps
             <span className="text-slate-500 text-[10px]">cached</span>
           )}
         </button>
+
+        {/* Info button */}
+        <div className="relative" ref={infoRef}>
+          <button
+            onClick={() => setShowInfo(!showInfo)}
+            aria-label="How transcripts work"
+            aria-expanded={showInfo}
+            className="flex items-center justify-center w-5 h-5 rounded-full text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01" />
+            </svg>
+          </button>
+          {showInfo && (
+            <div className="absolute left-0 bottom-full mb-2 w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-4 z-50">
+              <p className="text-xs text-slate-300 font-medium mb-2">How transcripts work</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed mb-2">
+                Transcripts are generated in your browser using the Web Speech API. When you press &ldquo;Start transcribing,&rdquo; your browser listens to the video&apos;s audio output and converts speech to text in real time.
+              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed mb-2">
+                No audio is sent to any server &mdash; everything happens locally on your device. Results are cached in your browser so you only need to generate them once per talk.
+              </p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Accuracy depends on your browser&apos;s speech recognition engine. Works best in Chrome. Click any segment to jump to that point in the video.
+              </p>
+            </div>
+          )}
+        </div>
 
         {isOpen && !isActive && (
           <button
