@@ -12,17 +12,23 @@ Built for the [Streamplace VOD JAM](https://blog.stream.place/3micfu6ifyk2a).
 
 - **Event archive structure** — `/events/atmosphereconf2026/` with room for future events
 - Browse and search all conference talks by title, speaker, or Bluesky handle
-- HLS video playback via [hls.js](https://github.com/video-dev/hls.js) with native Safari fallback
+- **Typeahead search** — instant search-as-you-type dropdown on both event listing and watch pages
+- **Sort toggle** — switch between newest-first and earliest-first ordering
+- HLS video playback via [Video.js v10](https://videojs.com/) + [hls.js](https://github.com/video-dev/hls.js) with native Safari fallback
+- **Quality selector** — choose video bitrate/resolution, with preference persisted across sessions
 - Memory-optimized video: capped HLS buffers (30 MB), back-buffer eviction, lazy-loaded thumbnails
 - Thumbnails from livestream records with async canvas-capture fallback, cached in localStorage
 - Bluesky comment threads — replies to the stream post and mentions of the talk URL appear as comments
 - Speaker handles auto-linked to Bluesky profiles
-- Share to Bluesky, copy link, or send via Messages
+- **Share modal** — share to Bluesky, Threads, Mastodon, Reddit, LinkedIn, Facebook, WhatsApp, SMS, or via Web Share API. Includes optional timestamp sharing (`?t=` parameter)
 - **Watch Later queue** — save talks for later (stored locally, no account needed)
 - **Live transcription** — experimental browser-based transcription using the Web Speech API (see below)
+- **YouTube-style keyboard controls** — space/k to play/pause, arrow keys to seek, m to mute, f for fullscreen, Shift+N/P for next/previous talk
 - Prev/next talk navigation with breadcrumb trail
 - OpenGraph and Twitter card metadata for every talk
+- **Brand assets page** — `/brand` with downloadable logotype and icon in SVG/PNG across four variants
 - WCAG-compliant: skip links, focus-visible outlines, proper contrast ratios, ARIA labels, reduced-motion support
+- Self-hosted fonts via `next/font` — zero external font requests, no layout shift
 - Fully responsive with a slate-toned dark theme
 - **No tracking, analytics, or cookies** — zero third-party scripts
 
@@ -119,30 +125,39 @@ Runs on port 3000 by default. Put behind nginx, Caddy, or any reverse proxy.
 - **Next.js 16** with App Router and Turbopack
 - **TypeScript** in strict mode
 - **Tailwind CSS v4** for styling (slate dark theme)
-- **hls.js** for HLS video playback
+- **Video.js v10** + **hls.js** for HLS video playback with quality selection
+- **Fuse.js** for client-side fuzzy search
 - **AT Protocol** for data (via XRPC — no SDK required)
 - **Bluesky API** for threaded comments
 - **Web Speech API** for experimental transcription
+- **Font Awesome** for share modal icons
 
 ## Project Structure
 
 ```
 src/
   app/
-    layout.tsx                              # Shell: header, footer, skip links
+    layout.tsx                              # Shell: header, footer, skip links, self-hosted fonts
     page.tsx                                # Redirect to current event
     globals.css                             # Tailwind + custom props + a11y styles
+    opengraph-image.tsx                     # Dynamic OG image generation
     events/atmosphereconf2026/
       layout.tsx                            # Event SEO metadata
-      page.tsx                              # Event listing: talk grid, search, day grouping
+      page.tsx                              # Event listing: talk grid, search, sort, day grouping
     api/
       bsky/route.ts                         # Proxy for Bluesky public API (getPostThread)
+    brand/
+      page.tsx                              # Brand assets page (server metadata)
+      BrandClient.tsx                       # Logotype, icon variants, download helpers
     watch/[rkey]/
       page.tsx                              # Server wrapper with generateMetadata
       WatchClient.tsx                       # Watch: player, breadcrumb, actions, comments
   components/
     VideoCard.tsx                           # Talk card (grid + compact sidebar variants)
-    VideoPlayer.tsx                         # HLS player with poster, states, keyboard a11y
+    VideoPlayer.tsx                         # Video.js + hls.js player with quality selector
+    QualitySelector.tsx                     # Bitrate/resolution picker overlay
+    ShareModal.tsx                          # Multi-platform share dialog with timestamp support
+    HeaderSearch.tsx                        # Typeahead search dropdown
     BlueskyComments.tsx                     # Threaded Bluesky discussion
     TranscriptPanel.tsx                     # Experimental Web Speech API transcription
     WatchLaterButton.tsx                    # Watch Later toggle
@@ -154,7 +169,11 @@ src/
     bluesky.ts                              # Bluesky thread + search comment aggregation
     thumbnails.ts                           # Async canvas-based thumbnail capture + caching
     transcription.ts                        # Web Speech API service
+    talks.ts                                # Fuse.js search over pre-built talk index
     watchLater.ts                           # Watch Later localStorage management
+    gradients.ts                            # Deterministic gradient generation from titles
+  data/
+    talks.json                              # Pre-built static talks index (generated at build)
 ```
 
 ## Adapting for Another Conference
