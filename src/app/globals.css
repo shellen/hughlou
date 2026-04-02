@@ -105,6 +105,16 @@ a {
   height: 0 !important;
 }
 
+/* Ensure Video.js player matches container roundness during playback */
+@media (min-width: 640px) {
+  .video-js,
+  .video-js .vjs-tech,
+  .video-js video {
+    border-radius: 0.375rem;
+    overflow: hidden;
+  }
+}
+
 .skeleton {
   background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   background-size: 200% 100%;
