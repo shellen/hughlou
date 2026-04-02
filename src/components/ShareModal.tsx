@@ -85,6 +85,16 @@ export default function ShareModal({ open, onClose, videoTitle, videoRef }: Shar
     openShare(`https://bsky.app/intent/compose?text=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`)
   }
 
+  const shareViaGerm = async () => {
+    try {
+      await navigator.clipboard.writeText(`${shareText} ${shareUrl}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* fallback */ }
+    // Open Germ app (universal link) — user can paste the copied link into a DM
+    window.open("https://app.germ.chat", "_blank")
+  }
+
   const shareToThreads = () => {
     openShare(`https://threads.net/intent/post?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`)
   }
@@ -151,6 +161,15 @@ export default function ShareModal({ open, onClose, videoTitle, videoRef }: Shar
           <button onClick={shareToBluesky} className={itemClass}>
             <FontAwesomeIcon icon={faBluesky} className="w-4 h-4 text-sky-400" />
             <span className="text-sm">Bluesky</span>
+          </button>
+
+          {/* Germ DM */}
+          <button onClick={shareViaGerm} className={itemClass}>
+            <svg className="w-4 h-4 text-emerald-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-7v4h4l-5 7z" />
+            </svg>
+            <span className="text-sm">Germ DM</span>
+            <span className="text-[10px] text-slate-500 ml-auto">copies link</span>
           </button>
 
           {/* Threads */}
