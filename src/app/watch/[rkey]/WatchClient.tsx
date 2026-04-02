@@ -10,6 +10,7 @@ import TranscriptPanel from "@/components/TranscriptPanel"
 import BlueskyComments from "@/components/BlueskyComments"
 import WatchLaterButton from "@/components/WatchLaterButton"
 import WatchLaterQueue from "@/components/WatchLaterQueue"
+import ShareModal from "@/components/ShareModal"
 import {
   listVideos,
   getVideoHlsUrl,
@@ -32,7 +33,6 @@ import { getCachedThumb, captureThumbsBatch } from "@/lib/thumbnails"
 import { talks as staticTalks } from "@/lib/talks"
 
 function ActionBar({
-  shareUrl,
   postUrl,
   streamplaceUrl,
   atRecordUrl,
@@ -40,8 +40,8 @@ function ActionBar({
   videoRkey,
   videoDuration,
   videoRef,
+  blueskyShareUrl,
 }: {
-  shareUrl: string
   postUrl: string | null
   streamplaceUrl: string | null
   atRecordUrl: string
@@ -49,8 +49,9 @@ function ActionBar({
   videoRkey: string
   videoDuration: number
   videoRef: React.RefObject<HTMLVideoElement | null>
+  blueskyShareUrl: string
 }) {
-  const [copied, setCopied] = useState<"link" | "timestamp" | false>(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
@@ -70,104 +71,26 @@ function ActionBar({
     }
   }, [moreOpen])
 
-  const getBaseUrl = () => {
-    const url = new URL(window.location.href)
-    url.searchParams.delete("t")
-    return url.toString()
-  }
-
-  const getTimestampUrl = () => {
-    const t = Math.floor(videoRef.current?.currentTime || 0)
-    if (t <= 0) return getBaseUrl()
-    const url = new URL(window.location.href)
-    url.searchParams.set("t", String(t))
-    return url.toString()
-  }
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(getBaseUrl())
-      setCopied("link")
-      setTimeout(() => setCopied(false), 2000)
-    } catch { /* fallback */ }
-  }
-
-  const handleCopyTimestamp = async () => {
-    try {
-      await navigator.clipboard.writeText(getTimestampUrl())
-      setCopied("timestamp")
-      setTimeout(() => setCopied(false), 2000)
-    } catch { /* fallback */ }
-  }
-
-  const currentSeconds = Math.floor(videoRef.current?.currentTime || 0)
-  const timestampLabel = formatDuration(currentSeconds * 1_000_000_000)
-
-  const messagesUrl = `sms:&body=${encodeURIComponent(`${videoTitle} — ${typeof window !== "undefined" ? window.location.href : ""}`)}`
-
   return (
     <div className="mt-5 pt-5 border-t border-slate-800 flex flex-wrap items-center gap-2" role="group" aria-label="Talk actions">
-      {/* Share on Bluesky */}
-      <a
-        href={shareUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Share on Bluesky (opens in new tab)"
+      {/* Share */}
+      <button
+        onClick={() => setShareOpen(true)}
         className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-indigo-300 bg-indigo-300/8 hover:bg-indigo-300/15 transition-colors"
       >
-        <svg className="w-3.5 h-3.5" viewBox="0 0 600 530" fill="currentColor" aria-hidden="true">
-          <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
         </svg>
         Share
-      </a>
-
-      {/* Copy Link */}
-      <button
-        onClick={handleCopy}
-        aria-label={copied === "link" ? "Link copied" : "Copy link to clipboard"}
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
-      >
-        {copied === "link" ? (
-          <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-        )}
-        {copied === "link" ? "Copied!" : "Copy Link"}
       </button>
 
-      {/* Copy Link at Timestamp */}
-      <button
-        onClick={handleCopyTimestamp}
-        aria-label={copied === "timestamp" ? "Timestamped link copied" : `Copy link at ${timestampLabel}`}
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
-      >
-        {copied === "timestamp" ? (
-          <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        )}
-        {copied === "timestamp" ? "Copied!" : `Copy at ${timestampLabel}`}
-      </button>
-
-      {/* Messages */}
-      <a
-        href={messagesUrl}
-        aria-label="Share via Messages"
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md text-slate-400 bg-slate-400/8 hover:bg-slate-400/15 transition-colors"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-        Messages
-      </a>
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        videoTitle={videoTitle}
+        videoRef={videoRef}
+        blueskyShareUrl={blueskyShareUrl}
+      />
 
       {/* Streamplace (if available) */}
       {streamplaceUrl && (
@@ -612,7 +535,6 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
 
           {/* Actions */}
           <ActionBar
-            shareUrl={shareUrl}
             postUrl={postUrl}
             streamplaceUrl={streamplaceUrl}
             atRecordUrl={`https://pds.ls/${video.uri}`}
@@ -620,6 +542,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
             videoRkey={rkey}
             videoDuration={video.duration}
             videoRef={videoElRef}
+            blueskyShareUrl={shareUrl}
           />
 
           {/* Transcript */}

@@ -105,6 +105,17 @@ a {
   height: 0 !important;
 }
 
+/* Dialog reset for share modal */
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
 /* Video.js v10 skin overrides */
 .media-default-skin {
   --media-border-radius: 0;
