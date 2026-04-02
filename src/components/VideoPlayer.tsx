@@ -229,7 +229,7 @@ function VideoPlayerInner({
       {showOverlay && (
         <div className="absolute inset-0">
           {(thumbDataUrl || poster) ? (
-            <img src={(thumbDataUrl || poster)!} alt="" className="absolute inset-0 w-full h-full object-cover" draggable={false} aria-hidden="true" />
+            <img src={(thumbDataUrl || poster)!} alt="" width={640} height={360} className="absolute inset-0 w-full h-full object-cover" draggable={false} aria-hidden="true" />
           ) : (
             <div className="absolute inset-0 flex items-end p-8" style={{ backgroundColor: gradientStyle.bg }}>
               <p className="text-base font-medium leading-snug line-clamp-3 opacity-40" aria-hidden="true" style={{ color: gradientStyle.accent }}>

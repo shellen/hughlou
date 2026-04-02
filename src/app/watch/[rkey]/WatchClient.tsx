@@ -10,7 +10,8 @@ import TranscriptPanel from "@/components/TranscriptPanel"
 import BlueskyComments from "@/components/BlueskyComments"
 import WatchLaterButton from "@/components/WatchLaterButton"
 import WatchLaterQueue from "@/components/WatchLaterQueue"
-import ShareModal from "@/components/ShareModal"
+import dynamic from "next/dynamic"
+const ShareModal = dynamic(() => import("@/components/ShareModal"), { ssr: false })
 import {
   listVideos,
   getVideoHlsUrl,
