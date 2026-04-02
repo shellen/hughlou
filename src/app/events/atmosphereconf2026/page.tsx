@@ -73,6 +73,7 @@ function Home() {
   const [hasMore, setHasMore] = useState(false)
   const searchParams = useSearchParams()
   const [search, setSearch] = useState(searchParams.get("q") || "")
+  const [newestFirst, setNewestFirst] = useState(true)
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
   const [speakerInfo, setSpeakerInfo] = useState<Record<string, { speaker: string; handles: string[]; creatorHandle: string; thumbUrl?: string }>>({})
 
@@ -170,7 +171,10 @@ function Home() {
   }
 
   const { filteredVideos, groupedByDay } = useMemo(() => {
-    const sorted = [...videos].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    const sorted = [...videos].sort((a, b) => {
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      return newestFirst ? diff : -diff
+    })
     const q = search.trim().toLowerCase()
     const filtered = q
       ? sorted.filter((v) => {
@@ -186,9 +190,9 @@ function Home() {
       if (!groups.has(key)) groups.set(key, [])
       groups.get(key)!.push(v)
     }
-    const sortedGroups = new Map([...groups.entries()].sort(([a], [b]) => b.localeCompare(a)))
+    const sortedGroups = new Map([...groups.entries()].sort(([a], [b]) => newestFirst ? b.localeCompare(a) : a.localeCompare(b)))
     return { filteredVideos: filtered, groupedByDay: sortedGroups }
-  }, [videos, search, speakerInfo])
+  }, [videos, search, speakerInfo, newestFirst])
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10">
@@ -239,11 +243,25 @@ function Home() {
         )}
       </div>
 
-      {search && (
-        <p className="text-xs text-slate-400 mb-6 font-mono" role="status" aria-live="polite" aria-atomic="true">
-          {filteredVideos.length} result{filteredVideos.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
-        </p>
-      )}
+      <div className="flex items-center justify-between mb-6">
+        {search ? (
+          <p className="text-xs text-slate-400 font-mono" role="status" aria-live="polite" aria-atomic="true">
+            {filteredVideos.length} result{filteredVideos.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
+          </p>
+        ) : (
+          <div />
+        )}
+        <button
+          onClick={() => setNewestFirst((prev) => !prev)}
+          aria-label={newestFirst ? "Show oldest first" : "Show newest first"}
+          className="flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-white transition-colors"
+        >
+          <svg className={`w-3.5 h-3.5 transition-transform ${newestFirst ? "" : "rotate-180"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          {newestFirst ? "Latest first" : "Earliest first"}
+        </button>
+      </div>
 
       {loading && videos.length === 0 ? (
         <div className="space-y-16" role="status" aria-label="Loading talks">
