@@ -13,7 +13,7 @@ import WatchLaterQueue from "@/components/WatchLaterQueue"
 import dynamic from "next/dynamic"
 const ShareModal = dynamic(() => import("@/components/ShareModal"), { ssr: false })
 import {
-  listVideos,
+  listAllVideos,
   getVideoHlsUrl,
   fetchLivestreamRecord,
   getLivestreamThumbUrl,
@@ -235,8 +235,7 @@ export default function WatchClient({ params: paramsPromise }: PageProps) {
             }).catch(() => {})
           }
         } else {
-          const response = await listVideos()
-          videos = response.records.map((r) => ({ ...r.value, uri: r.uri }))
+          videos = await listAllVideos()
           setAllVideos(videos)
 
           const currentVideo = videos.find((v) => v.uri.endsWith(`/${rkey}`))

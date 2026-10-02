@@ -90,6 +90,18 @@ export async function listVideos(
   return response.json()
 }
 
+// Fetch every video record, following the cursor across pages
+export async function listAllVideos(): Promise<VideoRecord[]> {
+  const all: VideoRecord[] = []
+  let cursor: string | undefined
+  do {
+    const response = await listVideos(cursor)
+    all.push(...response.records.map((r) => ({ ...r.value, uri: r.uri })))
+    cursor = response.cursor
+  } while (cursor)
+  return all
+}
+
 export function getVideoHlsUrl(rkey: string): string {
   const videoUri = `at://${REPO_DID}/place.stream.video/${rkey}`
   const params = new URLSearchParams({
