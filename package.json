@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build:data": "tsx scripts/build-talks-index.ts",
-    "prebuild": "tsx scripts/build-talks-index.ts",
-    "build": "next build",
+    "build": "npm run build:data && next build",
     "start": "next start",
     "lint": "next lint"
   },

@@ -6,6 +6,8 @@
  * Output: src/data/talks.json
  */
 
+import { normalizeVideo, type RawVideoRecord, type VideoRecord } from "../src/lib/api"
+
 const REPO_DID = "did:plc:rbvrr34edl5ddpuwcubjiost"
 
 // Caches for PDS and handle resolution
@@ -62,17 +64,6 @@ function extractDid(uri: string): string {
   return uri.replace("at://", "").split("/")[0]
 }
 
-interface VideoRecord {
-  $type: string
-  title: string
-  source: { ref: string; size: number; $type: string; mimeType: string }
-  creator: string
-  duration: number
-  createdAt: string
-  livestream: { cid: string; uri: string }
-  uri: string
-}
-
 interface LivestreamRecord {
   $type: string
   title: string
@@ -103,6 +94,7 @@ export interface Talk {
 async function fetchAllVideos(): Promise<VideoRecord[]> {
   const pdsUrl = await resolvePds(REPO_DID)
   const host = pdsUrl || "https://iameli.com"
+  console.log(`  PDS: ${host}${pdsUrl ? "" : " (fallback; DID resolution failed)"}`)
   const all: VideoRecord[] = []
   let cursor: string | undefined
 
@@ -110,12 +102,16 @@ async function fetchAllVideos(): Promise<VideoRecord[]> {
     const params = new URLSearchParams({ repo: REPO_DID, collection: "place.stream.video", limit: "100" })
     if (cursor) params.append("cursor", cursor)
 
-    const resp = await fetch(`${host}/xrpc/com.atproto.repo.listRecords?${params}`)
-    if (!resp.ok) throw new Error(`Failed to fetch videos: ${resp.statusText}`)
+    const url = `${host}/xrpc/com.atproto.repo.listRecords?${params}`
+    const resp = await fetch(url)
+    if (!resp.ok) {
+      const body = (await resp.text().catch(() => "")).slice(0, 500)
+      throw new Error(`Failed to fetch videos: ${resp.status} ${resp.statusText} from ${url}\n${body}`)
+    }
     const data = await resp.json()
 
-    for (const r of data.records) {
-      all.push({ ...r.value, uri: r.uri })
+    for (const r of data.records as Array<{ uri: string; value: RawVideoRecord }>) {
+      all.push(normalizeVideo(r.value, r.uri, host))
     }
 
     if (!data.cursor) break
@@ -123,6 +119,7 @@ async function fetchAllVideos(): Promise<VideoRecord[]> {
   }
 
   console.log(`  Fetched ${all.length} video records`)
+  if (all[0]) console.log(`  First record: ${JSON.stringify(all[0]).slice(0, 500)}`)
   return all
 }
 
@@ -153,9 +150,9 @@ async function enrichVideo(v: VideoRecord): Promise<Talk> {
   const rkey = extractRkey(v.uri)
   const creatorHandle = await resolveHandle(v.creator)
 
-  let speaker = ""
-  let handles: string[] = []
-  let thumbUrl: string | null = null
+  // Newer records carry no livestream link; the title may still hold the speaker line
+  let { speaker, handles } = parseSpeaker(v.title)
+  let thumbUrl: string | null = v.thumbUrl || null
   let postUri: string | null = null
 
   if (v.livestream?.uri) {
@@ -166,7 +163,7 @@ async function enrichVideo(v: VideoRecord): Promise<Talk> {
       handles = parsed.handles
       postUri = ls.post?.uri || null
 
-      if (ls.thumb?.ref?.$link) {
+      if (!thumbUrl && ls.thumb?.ref?.$link) {
         const creatorDid = extractDid(v.livestream.uri)
         const pds = await resolvePds(creatorDid)
         if (pds) thumbUrl = getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds)
@@ -177,7 +174,7 @@ async function enrichVideo(v: VideoRecord): Promise<Talk> {
   return {
     rkey,
     uri: v.uri,
-    title: v.title,
+    title: parseSpeaker(v.title).talkTitle,
     duration: v.duration,
     createdAt: v.createdAt,
     creator: v.creator,
@@ -224,8 +221,23 @@ async function main() {
   console.log("Done!")
 }
 
-main().catch((err) => {
-  console.error("Build failed:", err.message || err)
-  console.log("Continuing with existing talks.json (if any)")
-  // Don't exit with error — let the build proceed with stale data
-})
+main()
+  .catch((err) => {
+    console.error("Build failed:", err.message || err)
+    console.log("Continuing with existing talks.json (if any)")
+    // Don't exit with error — let the build proceed with stale data
+  })
+  .then(async () => {
+    // Fail the build rather than ship an empty search index
+    const { readFileSync } = await import("fs")
+    const { join } = await import("path")
+    const file = join(import.meta.dirname || __dirname, "..", "src", "data", "talks.json")
+    let count = 0
+    try {
+      count = JSON.parse(readFileSync(file, "utf8")).length
+    } catch {}
+    if (count === 0) {
+      console.error("talks.json has no talks; refusing to build with an empty search index")
+      process.exit(1)
+    }
+  })

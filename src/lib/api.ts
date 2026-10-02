@@ -29,11 +29,63 @@ export interface VideoRecord {
   creator: string
   duration: number // nanoseconds
   createdAt: string // ISO date
-  livestream: {
+  livestream?: {
     cid: string
     uri: string
   }
+  thumbUrl?: string
   uri: string // at://did:plc:.../place.stream.video/{rkey}
+}
+
+interface BlobRef {
+  ref: { $link: string }
+  size: number
+  $type: string
+  mimeType: string
+}
+
+// A place.stream.video record as stored on the PDS. Older records are
+// standalone videos linked to a livestream; newer ones are clips of a
+// full-day room recording with the thumbnail on the record itself.
+export interface RawVideoRecord {
+  $type: string
+  title: string
+  source?: {
+    $type?: string
+    size?: number
+    ref?: unknown
+    mimeType?: string
+    video?: string // sourceClip: at:// URI of the full recording
+    start?: number // sourceClip: ms into the full recording
+    end?: number
+  }
+  creator?: string
+  duration?: number // nanoseconds (old records)
+  durationMs?: number // milliseconds (new records)
+  createdAt: string
+  livestream?: { cid: string; uri: string }
+  thumb?: BlobRef
+}
+
+// Map either record shape onto VideoRecord
+export function normalizeVideo(value: RawVideoRecord, uri: string, pdsUrl: string): VideoRecord {
+  const did = extractDid(uri)
+  return {
+    $type: value.$type,
+    title: value.title,
+    source: {
+      ref: typeof value.source?.ref === "string" ? value.source.ref : "",
+      size: value.source?.size || 0,
+      $type: value.source?.$type || "",
+      mimeType: value.source?.mimeType || "",
+    },
+    creator: value.creator || did,
+    duration: value.duration ?? (value.durationMs ?? 0) * 1_000_000,
+    createdAt: value.createdAt,
+    livestream: value.livestream,
+    thumbUrl: value.thumb?.ref?.$link ? getLivestreamThumbUrl(did, value.thumb.ref.$link, pdsUrl) : undefined,
+    uri,
+  }
 }
 
 export interface LivestreamRecord {
@@ -87,7 +139,23 @@ export async function listVideos(
     throw new Error(`Failed to fetch videos: ${response.statusText}`)
   }
 
-  return response.json()
+  const data: { records: Array<{ uri: string; value: RawVideoRecord }>; cursor?: string } = await response.json()
+  return {
+    records: data.records.map((r) => ({ uri: r.uri, value: normalizeVideo(r.value, r.uri, pdsUrl) })),
+    cursor: data.cursor,
+  }
+}
+
+// Fetch every video record, following the cursor across pages
+export async function listAllVideos(): Promise<VideoRecord[]> {
+  const all: VideoRecord[] = []
+  let cursor: string | undefined
+  do {
+    const response = await listVideos(cursor)
+    all.push(...response.records.map((r) => ({ ...r.value, uri: r.uri })))
+    cursor = response.cursor
+  } while (cursor)
+  return all
 }
 
 export function getVideoHlsUrl(rkey: string): string {
@@ -268,13 +336,14 @@ export async function resolveVideoThumbnails(
   const thumbMap = new Map<string, string>()
 
   const tasks = videos
-    .filter((v) => v.livestream?.uri)
     .map(async (v) => {
+      const livestreamUri = v.livestream?.uri
+      if (!livestreamUri) return
       try {
         const rkey = extractRkey(v.uri)
-        const ls = await fetchLivestreamRecord(v.livestream.uri)
+        const ls = await fetchLivestreamRecord(livestreamUri)
         if (ls?.thumb?.ref?.$link) {
-          const creatorDid = extractDid(v.livestream.uri)
+          const creatorDid = extractDid(livestreamUri)
           const pds = await resolvePds(creatorDid)
           if (pds) {
             thumbMap.set(

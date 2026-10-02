@@ -1,0 +1,42 @@
+name: Build
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Summarize index
+        run: |
+          node -e '
+            const t = require("./src/data/talks.json")
+            console.log(`${t.length} talks`)
+            console.log(`${t.filter(x => x.speaker).length} with speaker info`)
+            console.log(`${t.filter(x => x.thumbUrl).length} with thumbnails`)
+            for (const x of t.slice(0, 5)) console.log(x.rkey, "|", x.title, "|", x.livestreamUri)
+          '
+      - name: Check playback of a full recording and a clip
+        run: |
+          for rkey in $(node -e '
+            const t = require("./src/data/talks.json")
+            const full = t.find(x => x.title.startsWith("ATmosphereConf 2026:"))
+            const clip = t.find(x => !x.title.startsWith("ATmosphereConf 2026:"))
+            console.log([full, clip].filter(Boolean).map(x => x.rkey).join(" "))
+          '); do
+            url="https://vod-beta.stream.place/xrpc/place.stream.playback.getVideoPlaylist?uri=at%3A%2F%2Fdid%3Aplc%3Arbvrr34edl5ddpuwcubjiost%2Fplace.stream.video%2F${rkey}"
+            echo "== $rkey"
+            curl -sS -o playlist.m3u8 -w 'HTTP %{http_code}\n' "$url"
+            head -c 400 playlist.m3u8; echo
+          done
