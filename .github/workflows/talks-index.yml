@@ -1,0 +1,29 @@
+name: Talks index
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build:data
+      - name: Summarize index
+        run: |
+          node -e '
+            const t = require("./src/data/talks.json")
+            console.log(`${t.length} talks`)
+            console.log(`${t.filter(x => x.speaker).length} with speaker info`)
+            console.log(`${t.filter(x => x.thumbUrl).length} with thumbnails`)
+            for (const x of t.slice(0, 5)) console.log(x.rkey, "|", x.title, "|", x.livestreamUri)
+          '

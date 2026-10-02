@@ -103,6 +103,7 @@ export interface Talk {
 async function fetchAllVideos(): Promise<VideoRecord[]> {
   const pdsUrl = await resolvePds(REPO_DID)
   const host = pdsUrl || "https://iameli.com"
+  console.log(`  PDS: ${host}${pdsUrl ? "" : " (fallback; DID resolution failed)"}`)
   const all: VideoRecord[] = []
   let cursor: string | undefined
 
@@ -110,8 +111,12 @@ async function fetchAllVideos(): Promise<VideoRecord[]> {
     const params = new URLSearchParams({ repo: REPO_DID, collection: "place.stream.video", limit: "100" })
     if (cursor) params.append("cursor", cursor)
 
-    const resp = await fetch(`${host}/xrpc/com.atproto.repo.listRecords?${params}`)
-    if (!resp.ok) throw new Error(`Failed to fetch videos: ${resp.statusText}`)
+    const url = `${host}/xrpc/com.atproto.repo.listRecords?${params}`
+    const resp = await fetch(url)
+    if (!resp.ok) {
+      const body = (await resp.text().catch(() => "")).slice(0, 500)
+      throw new Error(`Failed to fetch videos: ${resp.status} ${resp.statusText} from ${url}\n${body}`)
+    }
     const data = await resp.json()
 
     for (const r of data.records) {
@@ -123,6 +128,7 @@ async function fetchAllVideos(): Promise<VideoRecord[]> {
   }
 
   console.log(`  Fetched ${all.length} video records`)
+  if (all[0]) console.log(`  First record: ${JSON.stringify(all[0]).slice(0, 500)}`)
   return all
 }
 
