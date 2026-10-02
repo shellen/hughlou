@@ -224,8 +224,23 @@ async function main() {
   console.log("Done!")
 }
 
-main().catch((err) => {
-  console.error("Build failed:", err.message || err)
-  console.log("Continuing with existing talks.json (if any)")
-  // Don't exit with error — let the build proceed with stale data
-})
+main()
+  .catch((err) => {
+    console.error("Build failed:", err.message || err)
+    console.log("Continuing with existing talks.json (if any)")
+    // Don't exit with error — let the build proceed with stale data
+  })
+  .then(async () => {
+    // Fail the build rather than ship an empty search index
+    const { readFileSync } = await import("fs")
+    const { join } = await import("path")
+    const file = join(import.meta.dirname || __dirname, "..", "src", "data", "talks.json")
+    let count = 0
+    try {
+      count = JSON.parse(readFileSync(file, "utf8")).length
+    } catch {}
+    if (count === 0) {
+      console.error("talks.json has no talks; refusing to build with an empty search index")
+      process.exit(1)
+    }
+  })
