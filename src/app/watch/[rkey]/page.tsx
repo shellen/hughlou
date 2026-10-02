@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import WatchClient from "./WatchClient"
 import {
-  listVideos,
+  listAllVideos,
   fetchLivestreamRecord,
   parseSpeaker,
   formatDuration,
@@ -22,8 +22,7 @@ export async function generateMetadata({
   const { rkey } = await params
 
   try {
-    const response = await listVideos()
-    const videos = response.records.map((r) => ({ ...r.value, uri: r.uri }))
+    const videos = await listAllVideos()
     const video = videos.find((v) => v.uri.endsWith(`/${rkey}`))
 
     if (!video) {
@@ -33,7 +32,7 @@ export async function generateMetadata({
     }
 
     let speaker = ""
-    let thumbUrl: string | undefined
+    let thumbUrl = video.thumbUrl
     if (video.livestream?.uri) {
       const ls = await fetchLivestreamRecord(video.livestream.uri)
       if (ls) {

@@ -6,6 +6,8 @@
  * Output: src/data/talks.json
  */
 
+import { normalizeVideo, type RawVideoRecord, type VideoRecord } from "../src/lib/api"
+
 const REPO_DID = "did:plc:rbvrr34edl5ddpuwcubjiost"
 
 // Caches for PDS and handle resolution
@@ -62,17 +64,6 @@ function extractDid(uri: string): string {
   return uri.replace("at://", "").split("/")[0]
 }
 
-interface VideoRecord {
-  $type: string
-  title: string
-  source: { ref: string; size: number; $type: string; mimeType: string }
-  creator: string
-  duration: number
-  createdAt: string
-  livestream: { cid: string; uri: string }
-  uri: string
-}
-
 interface LivestreamRecord {
   $type: string
   title: string
@@ -119,8 +110,8 @@ async function fetchAllVideos(): Promise<VideoRecord[]> {
     }
     const data = await resp.json()
 
-    for (const r of data.records) {
-      all.push({ ...r.value, uri: r.uri })
+    for (const r of data.records as Array<{ uri: string; value: RawVideoRecord }>) {
+      all.push(normalizeVideo(r.value, r.uri, host))
     }
 
     if (!data.cursor) break
@@ -159,9 +150,9 @@ async function enrichVideo(v: VideoRecord): Promise<Talk> {
   const rkey = extractRkey(v.uri)
   const creatorHandle = await resolveHandle(v.creator)
 
-  let speaker = ""
-  let handles: string[] = []
-  let thumbUrl: string | null = null
+  // Newer records carry no livestream link; the title may still hold the speaker line
+  let { speaker, handles } = parseSpeaker(v.title)
+  let thumbUrl: string | null = v.thumbUrl || null
   let postUri: string | null = null
 
   if (v.livestream?.uri) {
@@ -172,7 +163,7 @@ async function enrichVideo(v: VideoRecord): Promise<Talk> {
       handles = parsed.handles
       postUri = ls.post?.uri || null
 
-      if (ls.thumb?.ref?.$link) {
+      if (!thumbUrl && ls.thumb?.ref?.$link) {
         const creatorDid = extractDid(v.livestream.uri)
         const pds = await resolvePds(creatorDid)
         if (pds) thumbUrl = getLivestreamThumbUrl(creatorDid, ls.thumb.ref.$link, pds)
@@ -183,7 +174,7 @@ async function enrichVideo(v: VideoRecord): Promise<Talk> {
   return {
     rkey,
     uri: v.uri,
-    title: v.title,
+    title: parseSpeaker(v.title).talkTitle,
     duration: v.duration,
     createdAt: v.createdAt,
     creator: v.creator,
